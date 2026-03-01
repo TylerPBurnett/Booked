@@ -1,10 +1,31 @@
 import { chromium } from 'playwright'
+import { copyFileSync, mkdirSync, existsSync, rmSync } from 'fs'
 import os from 'os'
 import path from 'path'
 
-// Reuse the user's existing Chrome profile — already logged into X
+// Source Chrome profile — where your X login session lives
 const CHROME_USER_DATA = process.env.CHROME_USER_DATA ||
   path.join(os.homedir(), 'Library', 'Application Support', 'Google', 'Chrome')
+
+// Copy session cookies to a temp dir so we don't conflict with a running Chrome.
+// Chrome encrypts cookies with the macOS keychain, keyed to the Chrome binary —
+// so copied cookies are still decryptable when launched with channel: 'chrome'.
+function prepareTempProfile(sourceUserData) {
+  const tempDir = path.join(os.tmpdir(), `booked-chrome-${Date.now()}`)
+  const defaultDir = path.join(tempDir, 'Default')
+  mkdirSync(defaultDir, { recursive: true })
+
+  // These files carry the authenticated session
+  const sessionFiles = ['Cookies', 'Cookies-journal', 'Local State', 'Preferences']
+  for (const file of sessionFiles) {
+    const src = path.join(sourceUserData, 'Default', file)
+    if (existsSync(src)) {
+      try { copyFileSync(src, path.join(defaultDir, file)) } catch { /* skip locked files */ }
+    }
+  }
+
+  return tempDir
+}
 
 function buildStopCondition(range, count, lastSyncedAt) {
   if (count) return { mode: 'count', limit: parseInt(count) }
@@ -78,7 +99,10 @@ export async function scrapeBookmarks({ range = 'sync', count, lastSyncedAt } = 
   const stopCondition = buildStopCondition(range, count, lastSyncedAt)
   const bookmarksById = new Map()
 
-  const context = await chromium.launchPersistentContext(CHROME_USER_DATA, {
+  // Copy cookies to a temp profile — avoids conflict if Chrome is already running
+  const tempProfile = prepareTempProfile(CHROME_USER_DATA)
+
+  const context = await chromium.launchPersistentContext(tempProfile, {
     channel: 'chrome',
     headless: false,
     args: ['--profile-directory=Default', '--no-first-run', '--no-default-browser-check'],
@@ -123,6 +147,9 @@ export async function scrapeBookmarks({ range = 'sync', count, lastSyncedAt } = 
   }
 
   await context.close()
+
+  // Clean up temp profile
+  try { rmSync(tempProfile, { recursive: true, force: true }) } catch { /* ignore */ }
 
   let results = Array.from(bookmarksById.values())
   results.sort((a, b) => new Date(b.bookmarkedAt) - new Date(a.bookmarkedAt))
