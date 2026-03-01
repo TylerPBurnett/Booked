@@ -1,8 +1,13 @@
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, beforeAll, vi } from 'vitest'
 import request from 'supertest'
 import { writeFileSync, mkdirSync } from 'fs'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
+
+// Mock the scraper so POST /api/sync doesn't launch Chrome during tests
+vi.mock('./scraper.js', () => ({
+  scrapeBookmarks: vi.fn().mockResolvedValue([])
+}))
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const DATA_DIR = join(__dirname, '..', 'data')
