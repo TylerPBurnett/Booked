@@ -23,8 +23,10 @@ The X API charges for bookmark access. Booked bypasses that entirely by intercep
 ├── server/                   ← Express API + scraping + classification
 │   ├── index.js              ← App entry point, route mounts, static serving
 │   ├── data.js               ← File I/O layer (reads/writes JSON)
-│   ├── scraper.js            ← Playwright browser automation
+│   ├── scraper.js            ← Playwright browser automation + X API extraction
 │   ├── classifier.js         ← Claude Haiku AI classification
+│   ├── auth.js               ← One-time login via Playwright Chromium (fallback)
+│   ├── import-cookies.js     ← Preferred auth: convert Cookie-Editor export → storageState
 │   ├── routes/
 │   │   ├── bookmarks.js      ← CRUD for bookmark records
 │   │   ├── meta.js           ← Metadata + tag management
@@ -175,19 +177,34 @@ This ensures a re-sync never destroys your tags, notes, or category assignments.
 
 ### `server/scraper.js`
 
-Uses `chromium.launchPersistentContext()` with your real Chrome user data directory. This means:
+Uses Playwright's bundled Chromium with a saved `storageState` session (not the system Chrome). Session must be set up once before first use — see [Auth Setup](#auth-setup) below.
 
-- No login required — Chrome already has your X session cookies
-- No credentials stored in the app
-- If Chrome updates and clears cookies, you just log back into X normally
-
-The scraper listens for responses matching `/graphql/` + `bookmark` in the URL. X's internal GraphQL API returns richer data than the DOM — including the actual `bookmarked_at` Unix timestamp, which is what makes time-range fetching accurate.
+The scraper intercepts network responses matching `/graphql/` + `bookmark` in the URL. X's internal GraphQL API returns richer data than the DOM — including the actual `bookmarked_at` Unix timestamp, which is what makes time-range fetching accurate.
 
 Stop conditions:
 - `--sync` → stop when oldest bookmark's `bookmarkedAt` < `lastSyncedAt`
 - `--range=week/month/year` → stop when oldest bookmark is older than cutoff
 - `--count=N` → stop after collecting N unique bookmarks
 - `--all` → stop only when scroll stalls (5 consecutive rounds with no new data)
+
+**X API response parsing:** X restructured their user data in early 2025. `screen_name` and `name` moved from `user_results.result.legacy` → `user_results.result.core`. Profile image moved to `user_results.result.avatar.image_url`. The extractor reads both locations and falls back gracefully. See `docs/X_API_NOTES.md` for the full schema.
+
+### `server/auth.js`
+
+One-time setup script. Opens Playwright Chromium, waits for manual X login, saves the session to `data/playwright-session.json` via `context.storageState()`. Re-run if the session expires.
+
+**Note:** Playwright Chromium is detected as a bot by X's login flow. Use `server/import-cookies.js` instead (see below).
+
+### `server/import-cookies.js`
+
+Preferred auth setup. Converts a Cookie-Editor JSON export from your real Chrome browser into the Playwright `storageState` format, saving to `data/playwright-session.json`.
+
+Steps:
+1. Install [Cookie-Editor](https://cookie-editor.com/) in Chrome
+2. Go to x.com (logged in) → Cookie-Editor icon → Export → Export as JSON
+3. `node server/import-cookies.js ~/Downloads/cookies.json`
+
+No login automation needed — uses your real, valid Chrome session.
 
 ### `server/classifier.js`
 
@@ -311,6 +328,39 @@ All endpoints served at `http://localhost:3333/api/`.
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/api/sync` | Trigger full sync. Body: `{ range?, count? }` |
+
+---
+
+## Auth Setup
+
+The scraper uses Playwright's bundled Chromium with a saved session file at `data/playwright-session.json`. This file must be created once before the first sync.
+
+### Option A — Cookie import (recommended)
+
+Avoids bot detection entirely. Uses your real Chrome session.
+
+1. Install [Cookie-Editor](https://cookie-editor.com/) Chrome extension
+2. Go to https://x.com while logged in
+3. Cookie-Editor icon → **Export → Export as JSON** → save the file
+4. Run: `node server/import-cookies.js ~/Downloads/cookies.json`
+
+Done. The session file is written and the scraper will use it on every subsequent sync.
+
+### Option B — Playwright login (fallback)
+
+X detects Playwright Chromium as a bot and may block login with `"Could not log you in now"`. Use Option A if this happens.
+
+```bash
+node server/auth.js
+```
+
+Log in manually in the browser window that opens, navigate to x.com/i/bookmarks, then close the browser.
+
+### Session expiry
+
+X sessions typically last 1–3 months. When the scraper returns an error about session expiry (or a 0-bookmark sync from a page that redirects to login), re-run your preferred auth option above.
+
+The `data/playwright-session.json` file is gitignored — it contains your auth tokens and should never be committed.
 
 ---
 

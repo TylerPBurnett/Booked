@@ -1,31 +1,10 @@
 import { chromium } from 'playwright'
-import { copyFileSync, mkdirSync, existsSync, rmSync } from 'fs'
-import os from 'os'
+import { existsSync } from 'fs'
 import path from 'path'
+import { fileURLToPath } from 'url'
 
-// Source Chrome profile — where your X login session lives
-const CHROME_USER_DATA = process.env.CHROME_USER_DATA ||
-  path.join(os.homedir(), 'Library', 'Application Support', 'Google', 'Chrome')
-
-// Copy session cookies to a temp dir so we don't conflict with a running Chrome.
-// Chrome encrypts cookies with the macOS keychain, keyed to the Chrome binary —
-// so copied cookies are still decryptable when launched with channel: 'chrome'.
-function prepareTempProfile(sourceUserData) {
-  const tempDir = path.join(os.tmpdir(), `booked-chrome-${Date.now()}`)
-  const defaultDir = path.join(tempDir, 'Default')
-  mkdirSync(defaultDir, { recursive: true })
-
-  // These files carry the authenticated session
-  const sessionFiles = ['Cookies', 'Cookies-journal', 'Local State', 'Preferences']
-  for (const file of sessionFiles) {
-    const src = path.join(sourceUserData, 'Default', file)
-    if (existsSync(src)) {
-      try { copyFileSync(src, path.join(defaultDir, file)) } catch { /* skip locked files */ }
-    }
-  }
-
-  return tempDir
-}
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const SESSION_PATH = path.join(__dirname, '..', 'data', 'playwright-session.json')
 
 function buildStopCondition(range, count, lastSyncedAt) {
   if (count) return { mode: 'count', limit: parseInt(count) }
@@ -47,9 +26,18 @@ function extractBookmarksFromResponse(json) {
       .filter(e => e?.entryId?.startsWith('tweet-'))
       .map(entry => {
         const result = entry?.content?.itemContent?.tweet_results?.result
-        const core = result?.core || result?.tweet?.core
+        const tweetCore = result?.core || result?.tweet?.core
         const legacy = result?.legacy || result?.tweet?.legacy
-        const user = core?.user_results?.result?.legacy || {}
+        const userResult = tweetCore?.user_results?.result
+
+        // X moved screen_name/name from user.legacy → user.core in early 2025
+        const userCore = userResult?.core || {}
+        const userLegacy = userResult?.legacy || {}
+        const user = {
+          screen_name: userCore.screen_name || userLegacy.screen_name,
+          name: userCore.name || userLegacy.name,
+          profile_image_url_https: userResult?.avatar?.image_url || userLegacy.profile_image_url_https || ''
+        }
 
         if (!legacy || !user.screen_name) return null
 
@@ -96,18 +84,19 @@ function extractBookmarksFromResponse(json) {
 }
 
 export async function scrapeBookmarks({ range = 'sync', count, lastSyncedAt } = {}) {
+  if (!existsSync(SESSION_PATH)) {
+    throw new Error(
+      'No Playwright session found. Run this first:\n' +
+      '  node /Users/tyler/Development/Booked/server/auth.js\n' +
+      'Then log in to X in the browser window that opens.'
+    )
+  }
+
   const stopCondition = buildStopCondition(range, count, lastSyncedAt)
   const bookmarksById = new Map()
 
-  // Copy cookies to a temp profile — avoids conflict if Chrome is already running
-  const tempProfile = prepareTempProfile(CHROME_USER_DATA)
-
-  const context = await chromium.launchPersistentContext(tempProfile, {
-    channel: 'chrome',
-    headless: false,
-    args: ['--profile-directory=Default', '--no-first-run', '--no-default-browser-check'],
-  })
-
+  const browser = await chromium.launch({ headless: false })
+  const context = await browser.newContext({ storageState: SESSION_PATH })
   const page = await context.newPage()
 
   page.on('response', async (response) => {
@@ -125,7 +114,17 @@ export async function scrapeBookmarks({ range = 'sync', count, lastSyncedAt } = 
 
   try {
     await page.goto('https://x.com/i/bookmarks', { waitUntil: 'networkidle', timeout: 30000 })
-  } catch { /* networkidle timeout on slow connections — continue */ }
+  } catch { /* networkidle timeout — continue */ }
+
+  // If session expired, X redirects to login
+  const currentUrl = page.url()
+  if (currentUrl.includes('/login') || currentUrl.includes('/flow/login')) {
+    await browser.close()
+    throw new Error(
+      'X session expired. Re-run auth:\n' +
+      '  node /Users/tyler/Development/Booked/server/auth.js'
+    )
+  }
 
   let stalledRounds = 0
   while (stalledRounds < 5) {
@@ -146,10 +145,7 @@ export async function scrapeBookmarks({ range = 'sync', count, lastSyncedAt } = 
     bookmarksById.size === countBefore ? stalledRounds++ : (stalledRounds = 0)
   }
 
-  await context.close()
-
-  // Clean up temp profile
-  try { rmSync(tempProfile, { recursive: true, force: true }) } catch { /* ignore */ }
+  await browser.close()
 
   let results = Array.from(bookmarksById.values())
   results.sort((a, b) => new Date(b.bookmarkedAt) - new Date(a.bookmarkedAt))
