@@ -14,6 +14,15 @@ function BookedApp() {
   const filters = useFilters(bookmarks)
   const { query, setQuery, results } = useFuzzySearch(filters.filtered)
   const [selectedId, setSelectedId] = useState(null)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    () => localStorage.getItem('booked-sidebar-collapsed') === 'true'
+  )
+
+  const toggleSidebar = () => setSidebarCollapsed(prev => {
+    const next = !prev
+    localStorage.setItem('booked-sidebar-collapsed', String(next))
+    return next
+  })
 
   const selectedBookmark = bookmarks.find(b => b.id === selectedId) || null
 
@@ -36,6 +45,8 @@ function BookedApp() {
   return (
     <>
       <Layout
+        collapsed={sidebarCollapsed}
+        onToggleSidebar={toggleSidebar}
         sidebar={
           <Sidebar
             bookmarks={bookmarks}
@@ -46,6 +57,7 @@ function BookedApp() {
             setSelectedTags={filters.setSelectedTags}
             syncing={syncing}
             onSync={sync}
+            collapsed={sidebarCollapsed}
           />
         }
         header={
