@@ -6,7 +6,23 @@ Ordered roughly by impact-to-effort ratio. Items near the top deliver the most v
 
 ## High Priority
 
-### 1. Bulk Tag Operations
+### 1. Post-Sync Triage Inbox
+
+**What:** After a sync completes, a focused "New" view appears showing only the bookmarks just added. Each card shows the AI-suggested category and tags pre-filled, with a quick way to confirm or override before moving on. Once triaged, the bookmark graduates to the main library. A "Skip — trust AI" button dismisses the inbox without reviewing.
+
+**Why:** Auto-classification during sync is the right default — it's fast and non-blocking. But the AI picks from a fixed taxonomy without knowing your mental model. The inbox gives you a natural "triage on your own schedule" moment: you can process it right away or come back later. It also makes the AI suggestion feel collaborative rather than prescriptive.
+
+**Implementation:**
+- Track `syncedAt` timestamp on each bookmark (already set during upsert)
+- `useBookmarks` exposes a derived `unreviewed` list — bookmarks where `syncedAt` is after `lastTriagedAt` in `meta.json`
+- After sync, the app automatically navigates to or highlights an "Inbox" tab in the sidebar
+- Inbox view: same card layout, but with category/tag fields expanded inline for fast editing
+- "Mark all reviewed" and "Skip — trust AI" buttons write `lastTriagedAt` to meta
+- Badge on the sidebar Inbox item shows unreviewed count
+
+---
+
+### 2. Bulk Tag Operations
 
 **What:** Shift+click to multi-select cards. When multiple cards are selected, a floating action bar appears with options to bulk-assign a category, add a tag to all selected, archive selected, or export selected.
 
