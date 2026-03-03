@@ -108,6 +108,11 @@ export function BookmarkCard({ bookmark, onClick }) {
         >
           {category}
         </span>
+        {bookmark.subcategory && (
+          <span className="text-[11px] px-2 py-0.5 rounded-md text-ink-low bg-float font-medium">
+            {bookmark.subcategory}
+          </span>
+        )}
         <div className="flex items-center gap-3 text-xs text-ink-low font-mono tabular-nums">
           <span className="flex items-center gap-1">
             <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
