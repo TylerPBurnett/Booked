@@ -39,5 +39,24 @@ export function useCategories() {
     await fetch_()
   }, [fetch_])
 
-  return { categories, createCategory, renameCategory, deleteCategory, refetch: fetch_ }
+  const reorderCategories = useCallback(async (nameOrder) => {
+    // Optimistic update — reorder local state immediately
+    setCategories(prev => {
+      const byName = Object.fromEntries(prev.map(c => [c.name, c]))
+      return nameOrder.map(n => byName[n]).filter(Boolean)
+    })
+
+    const res = await fetch('/api/categories/reorder', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order: nameOrder }),
+    })
+    if (!res.ok) {
+      // Revert on failure
+      await fetch_()
+      throw new Error((await res.json()).error)
+    }
+  }, [fetch_])
+
+  return { categories, createCategory, renameCategory, deleteCategory, reorderCategories, refetch: fetch_ }
 }
