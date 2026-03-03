@@ -168,3 +168,15 @@ export function renameCategory(meta, oldName, newName, parent = null) {
     categories: meta.categories.map(c => (c.name === oldName ? { ...c, name: newName } : c)),
   }
 }
+
+/** Return new meta with categories reordered. nameOrder must list every category name exactly once. */
+export function reorderCategories(meta, nameOrder) {
+  if (nameOrder.length !== meta.categories.length) {
+    throw new Error('order must include all categories')
+  }
+  const byName = Object.fromEntries(meta.categories.map(c => [c.name, c]))
+  for (const name of nameOrder) {
+    if (!byName[name]) throw new Error(`Unknown category "${name}"`)
+  }
+  return { ...meta, categories: nameOrder.map(n => byName[n]) }
+}

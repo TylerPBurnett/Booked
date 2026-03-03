@@ -5,6 +5,7 @@ import {
   addCategory,
   removeCategory,
   renameCategory,
+  reorderCategories,
 } from './data.js'
 
 const makeBookmark = (id, overrides = {}) => ({
@@ -147,5 +148,33 @@ describe('renameCategory', () => {
   it('throws if trying to rename Uncategorized', () => {
     const meta = { categories: [{ name: 'Uncategorized', children: [] }] }
     expect(() => renameCategory(meta, 'Uncategorized', 'Other')).toThrow()
+  })
+})
+
+describe('reorderCategories', () => {
+  const meta = {
+    categories: [
+      { name: 'Design', children: [] },
+      { name: 'Dev',    children: ['Frontend'] },
+      { name: 'Reads',  children: [] },
+    ],
+  }
+
+  it('reorders categories to match supplied name array', () => {
+    const result = reorderCategories(meta, ['Reads', 'Dev', 'Design'])
+    expect(result.categories.map(c => c.name)).toEqual(['Reads', 'Dev', 'Design'])
+  })
+
+  it('preserves children when reordering', () => {
+    const result = reorderCategories(meta, ['Dev', 'Design', 'Reads'])
+    expect(result.categories[0].children).toEqual(['Frontend'])
+  })
+
+  it('throws if an unknown name is supplied', () => {
+    expect(() => reorderCategories(meta, ['Design', 'Dev', 'Unknown'])).toThrow()
+  })
+
+  it('throws if order length does not match category count', () => {
+    expect(() => reorderCategories(meta, ['Design', 'Dev'])).toThrow()
   })
 })
