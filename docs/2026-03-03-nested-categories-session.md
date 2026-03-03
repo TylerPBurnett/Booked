@@ -219,3 +219,27 @@ Tests  31 passed (31)
 - Bookmarks need to be re-synced from X after the data loss incident described above
 - Categories added during the test run (such as "AI", "Frontend", "Backend") appeared in `meta.json` during testing — these were cleared when `meta.json` was restored to the original category set
 - The sidebar uses categories returned by `GET /api/categories`; on first load after a sync, newly synced bookmarks will be classified and their category counts will populate the tree automatically
+
+---
+
+## Industry Standard Gaps (Priority Order)
+
+Compared to Raindrop, Notion, Linear, and Pinboard, several common patterns are missing:
+
+### 1. No drag-and-drop organization *(highest priority)*
+Category order is fixed at creation time. Every serious organizer app lets you reorder categories, move subcategories to top-level, and reorder bookmarks within a view by dragging. Sidebar drag-to-reorder is the most-felt friction point in daily use.
+
+### 2. No bulk bookmark actions
+After sync, changing a bookmark's category requires opening the detail panel one at a time. Raindrop's core workflow is multi-select + bulk move. With 5k bookmarks this is essential for actually organizing the library.
+
+### 3. No saved filter collections ("smart folders")
+Raindrop, Notion, and Bear all support saved filters that look like collections: e.g. "All Dev bookmarks tagged `react` from this year." The filter state already exists in `useFilters` — it just needs a name and persistence layer.
+
+### 4. Subcategory counts don't roll up to parent *(correctness bug)*
+`GET /api/categories` returns the parent count as bookmarks with no subcategory only. A bookmark in `Dev > Frontend` contributes to the `Frontend` count but not the `Dev` count. Raindrop rolls up — clicking "Dev" shows everything including subcategories, and the displayed count reflects this.
+
+### 5. No empty-state onboarding
+First-time use (or after a data reset) shows an empty sidebar with no guidance. Apps like Raindrop auto-suggest categories based on what was imported.
+
+### 6. No keyboard navigation
+Power users expect `↑↓` to move between categories, `→` to expand, `←` to collapse, and `Enter` to navigate. Standard in any pro-grade tool.
