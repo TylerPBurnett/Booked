@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useBookmarks } from './hooks/useBookmarks.js'
 import { useFilters } from './hooks/useFilters.js'
 import { useFuzzySearch } from './hooks/useFuzzySearch.js'
@@ -15,6 +15,22 @@ export default function App() {
   const [selectedId, setSelectedId] = useState(null)
 
   const selectedBookmark = bookmarks.find(b => b.id === selectedId) || null
+
+  const PAGE_SIZE = 100
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+  const sentinelRef = useRef(null)
+
+  useEffect(() => { setVisibleCount(PAGE_SIZE) }, [results])
+
+  useEffect(() => {
+    const el = sentinelRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting) setVisibleCount(n => n + PAGE_SIZE)
+    }, { rootMargin: '300px' })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [results])
 
   return (
     <>
@@ -57,15 +73,20 @@ export default function App() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {results.map(b => (
-              <BookmarkCard
-                key={b.id}
-                bookmark={b}
-                onClick={() => setSelectedId(b.id)}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {results.slice(0, visibleCount).map(b => (
+                <BookmarkCard
+                  key={b.id}
+                  bookmark={b}
+                  onClick={() => setSelectedId(b.id)}
+                />
+              ))}
+            </div>
+            {visibleCount < results.length && (
+              <div ref={sentinelRef} className="h-8" />
+            )}
+          </>
         )}
       </Layout>
 

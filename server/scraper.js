@@ -46,7 +46,7 @@ function extractBookmarksFromResponse(json) {
 
         const bookmarkedAt = legacy.bookmarked_at
           ? new Date(legacy.bookmarked_at * 1000).toISOString()
-          : new Date().toISOString()
+          : new Date(legacy.created_at).toISOString()
 
         const media = (legacy.extended_entities?.media || legacy.entities?.media || []).map(m => ({
           type: m.type === 'photo' ? 'image' : m.type,

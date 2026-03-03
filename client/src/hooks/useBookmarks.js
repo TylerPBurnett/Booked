@@ -9,7 +9,7 @@ export function useBookmarks() {
   const fetchAll = useCallback(async () => {
     setLoading(true)
     const [bmRes, metaRes] = await Promise.all([
-      fetch('/api/bookmarks?limit=500'),
+      fetch('/api/bookmarks?limit=10000'),
       fetch('/api/meta')
     ])
     const bmData = await bmRes.json()
