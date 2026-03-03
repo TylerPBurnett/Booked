@@ -16,12 +16,13 @@ router.post('/', async (req, res) => {
       return res.json({ newBookmarks: 0, totalScraped: 0 })
     }
 
-    const classified = await classifyBatch(scraped)
+    const classified = await classifyBatch(scraped, meta.categories || [])
     const classifiedById = Object.fromEntries(classified.map(c => [c.id, c]))
 
     const enriched = scraped.map(b => ({
       ...b,
       category: classifiedById[b.id]?.category || 'Uncategorized',
+      subcategory: classifiedById[b.id]?.subcategory ?? null,
       tags: classifiedById[b.id]?.tags || [],
       aiSuggestedTags: classifiedById[b.id]?.tags || [],
     }))
