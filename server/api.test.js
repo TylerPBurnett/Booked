@@ -200,7 +200,7 @@ describe('PUT /api/categories/reorder', () => {
   it('returns 400 if an unknown name is supplied', async () => {
     const res = await request(app)
       .put('/api/categories/reorder')
-      .send({ order: ['Dev', 'Design', 'Uncategorized', 'Ghost'] })
+      .send({ order: ['Dev', 'Design', 'Ghost'] })
     expect(res.status).toBe(400)
   })
 })
