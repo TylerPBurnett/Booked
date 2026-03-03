@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { ThemeProvider } from './context/ThemeContext.jsx'
 import { useBookmarks } from './hooks/useBookmarks.js'
 import { useFilters } from './hooks/useFilters.js'
+import { useCategories } from './hooks/useCategories.js'
 import { useFuzzySearch } from './hooks/useFuzzySearch.js'
 import { Layout } from './components/Layout.jsx'
 import { Sidebar } from './components/Sidebar.jsx'
@@ -12,6 +13,7 @@ import { BookmarkDetail } from './components/BookmarkDetail.jsx'
 function BookedApp() {
   const { bookmarks, meta, loading, syncing, sync, updateBookmark } = useBookmarks()
   const filters = useFilters(bookmarks)
+  const { categories, createCategory, renameCategory: renameCat, deleteCategory } = useCategories()
   const { query, setQuery, results } = useFuzzySearch(filters.filtered)
   const [selectedId, setSelectedId] = useState(null)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
@@ -58,6 +60,12 @@ function BookedApp() {
             syncing={syncing}
             onSync={sync}
             collapsed={sidebarCollapsed}
+            categories={categories}
+            subcategory={filters.subcategory}
+            setSubcategory={filters.setSubcategory}
+            onCreateCategory={createCategory}
+            onRenameCategory={renameCat}
+            onDeleteCategory={deleteCategory}
           />
         }
         header={
@@ -111,6 +119,7 @@ function BookedApp() {
         bookmark={selectedBookmark}
         onClose={() => setSelectedId(null)}
         onUpdate={updateBookmark}
+        categories={categories}
       />
     </>
   )
