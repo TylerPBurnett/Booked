@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { ThemeProvider } from './context/ThemeContext.jsx'
 import { useBookmarks } from './hooks/useBookmarks.js'
 import { useFilters } from './hooks/useFilters.js'
 import { useFuzzySearch } from './hooks/useFuzzySearch.js'
@@ -8,7 +9,7 @@ import { TopBar } from './components/TopBar.jsx'
 import { BookmarkCard } from './components/BookmarkCard.jsx'
 import { BookmarkDetail } from './components/BookmarkDetail.jsx'
 
-export default function App() {
+function BookedApp() {
   const { bookmarks, meta, loading, syncing, sync, updateBookmark } = useBookmarks()
   const filters = useFilters(bookmarks)
   const { query, setQuery, results } = useFuzzySearch(filters.filtered)
@@ -63,13 +64,17 @@ export default function App() {
       >
         {loading ? (
           <div className="flex items-center justify-center h-64">
-            <div className="text-neutral-500 text-sm font-mono animate-pulse">Loading bookmarks...</div>
+            <span className="text-ink-low text-sm font-mono animate-pulse">loading bookmarks…</span>
           </div>
         ) : results.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 gap-3">
-            <p className="text-neutral-500 text-sm">No bookmarks yet.</p>
-            <p className="text-neutral-600 text-xs font-mono">
-              Run <code className="px-1.5 py-0.5 bg-neutral-800 rounded">/x-bookmarks --sync</code> to fetch from X
+            <p className="text-ink-mid text-sm">No bookmarks found.</p>
+            <p className="text-ink-low text-xs font-mono">
+              Run{' '}
+              <code className="px-2 py-0.5 bg-lift border border-wire rounded text-brand">
+                /x-bookmarks --sync
+              </code>{' '}
+              to fetch from X
             </p>
           </div>
         ) : (
@@ -96,5 +101,13 @@ export default function App() {
         onUpdate={updateBookmark}
       />
     </>
+  )
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <BookedApp />
+    </ThemeProvider>
   )
 }

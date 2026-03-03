@@ -1,12 +1,12 @@
 export function Layout({ sidebar, header, children }) {
   return (
-    <div className="flex h-screen bg-neutral-950 overflow-hidden">
-      <aside className="w-56 shrink-0 border-r border-neutral-800 flex flex-col overflow-y-auto scrollbar-thin">
+    <div className="flex h-screen bg-canvas overflow-hidden">
+      <aside className="w-60 shrink-0 border-r border-wire bg-lift flex flex-col overflow-hidden">
         {sidebar}
       </aside>
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-hidden min-w-0">
         {header}
-        <div className="flex-1 overflow-y-auto scrollbar-thin p-6">
+        <div className="flex-1 overflow-y-auto scrollbar-thin p-5">
           {children}
         </div>
       </main>

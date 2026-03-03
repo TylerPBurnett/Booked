@@ -1,14 +1,273 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-* { box-sizing: border-box; }
-body { font-family: 'DM Sans', system-ui, sans-serif; }
+/* ── Base ─────────────────────────────────────────────────────── */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Smooth theme transitions */
+*, *::before, *::after {
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+/* Opt-out for things that shouldn't animate */
+input, textarea, select, button, a, img, svg, path, circle, rect {
+  transition-duration: 100ms;
+}
+
+/* ── Themes ───────────────────────────────────────────────────── */
+
+/* Dark */
+[data-theme="dark"] {
+  --bg:            #0f0f13;
+  --bg-elevated:   #16161d;
+  --bg-overlay:    #1e1e28;
+  --border:        #26263a;
+  --border-subtle: #1a1a26;
+  --text:          #e2e2f0;
+  --text-muted:    #7878a0;
+  --text-faint:    #38384e;
+  --accent:        #8b7cf8;
+  --accent-subtle: rgba(139, 124, 248, 0.12);
+}
+
+/* Dim */
+[data-theme="dim"] {
+  --bg:            #1c2128;
+  --bg-elevated:   #22272e;
+  --bg-overlay:    #2d333b;
+  --border:        #373e47;
+  --border-subtle: #2d333b;
+  --text:          #adbac7;
+  --text-muted:    #768390;
+  --text-faint:    #444c56;
+  --accent:        #539bf5;
+  --accent-subtle: rgba(83, 155, 245, 0.12);
+}
+
+/* Light */
+[data-theme="light"] {
+  --bg:            #f4f4f8;
+  --bg-elevated:   #ffffff;
+  --bg-overlay:    #ebebf2;
+  --border:        #dcdce8;
+  --border-subtle: #ededf4;
+  --text:          #1a1a2e;
+  --text-muted:    #5e5e78;
+  --text-faint:    #9898b0;
+  --accent:        #6366f1;
+  --accent-subtle: rgba(99, 102, 241, 0.1);
+}
+
+/* Gruvbox Dark */
+[data-theme="gruvbox-dark"] {
+  --bg:            #1d2021;
+  --bg-elevated:   #282828;
+  --bg-overlay:    #32302f;
+  --border:        #3c3836;
+  --border-subtle: #282828;
+  --text:          #ebdbb2;
+  --text-muted:    #a89984;
+  --text-faint:    #665c54;
+  --accent:        #d79921;
+  --accent-subtle: rgba(215, 153, 33, 0.15);
+}
+
+/* Gruvbox Dim */
+[data-theme="gruvbox-dim"] {
+  --bg:            #282828;
+  --bg-elevated:   #32302f;
+  --bg-overlay:    #3c3836;
+  --border:        #504945;
+  --border-subtle: #3c3836;
+  --text:          #d5c4a1;
+  --text-muted:    #928374;
+  --text-faint:    #7c6f64;
+  --accent:        #b8bb26;
+  --accent-subtle: rgba(184, 187, 38, 0.15);
+}
+
+/* Gruvbox Light */
+[data-theme="gruvbox-light"] {
+  --bg:            #f9f5d7;
+  --bg-elevated:   #fbf1c7;
+  --bg-overlay:    #f2e5bc;
+  --border:        #d5c4a1;
+  --border-subtle: #ebdbb2;
+  --text:          #3c3836;
+  --text-muted:    #7c6f64;
+  --text-faint:    #a89984;
+  --accent:        #9d0006;
+  --accent-subtle: rgba(157, 0, 6, 0.1);
+}
+
+/* Catppuccin Mocha */
+[data-theme="catppuccin-mocha"] {
+  --bg:            #1e1e2e;
+  --bg-elevated:   #181825;
+  --bg-overlay:    #313244;
+  --border:        #45475a;
+  --border-subtle: #313244;
+  --text:          #cdd6f4;
+  --text-muted:    #a6adc8;
+  --text-faint:    #6c7086;
+  --accent:        #cba6f7;
+  --accent-subtle: rgba(203, 166, 247, 0.12);
+}
+
+/* Catppuccin Macchiato */
+[data-theme="catppuccin-macchiato"] {
+  --bg:            #24273a;
+  --bg-elevated:   #1e2030;
+  --bg-overlay:    #363a4f;
+  --border:        #494d64;
+  --border-subtle: #363a4f;
+  --text:          #cad3f5;
+  --text-muted:    #a5adcb;
+  --text-faint:    #6e738d;
+  --accent:        #c6a0f6;
+  --accent-subtle: rgba(198, 160, 246, 0.12);
+}
+
+/* Catppuccin Frappé */
+[data-theme="catppuccin-frappe"] {
+  --bg:            #303446;
+  --bg-elevated:   #292c3c;
+  --bg-overlay:    #414559;
+  --border:        #51576d;
+  --border-subtle: #414559;
+  --text:          #c6d0f5;
+  --text-muted:    #a5adce;
+  --text-faint:    #737994;
+  --accent:        #ca9ee6;
+  --accent-subtle: rgba(202, 158, 230, 0.12);
+}
+
+/* Catppuccin Latte */
+[data-theme="catppuccin-latte"] {
+  --bg:            #eff1f5;
+  --bg-elevated:   #e6e9ef;
+  --bg-overlay:    #ccd0da;
+  --border:        #bcc0cc;
+  --border-subtle: #ccd0da;
+  --text:          #4c4f69;
+  --text-muted:    #6c6f85;
+  --text-faint:    #9ca0b0;
+  --accent:        #8839ef;
+  --accent-subtle: rgba(136, 57, 239, 0.1);
+}
+
+/* Monokai */
+[data-theme="monokai"] {
+  --bg:            #272822;
+  --bg-elevated:   #2f3027;
+  --bg-overlay:    #383830;
+  --border:        #49483e;
+  --border-subtle: #383830;
+  --text:          #f8f8f2;
+  --text-muted:    #75715e;
+  --text-faint:    #4d4b43;
+  --accent:        #66d9ef;
+  --accent-subtle: rgba(102, 217, 239, 0.12);
+}
+
+/* Dracula */
+[data-theme="dracula"] {
+  --bg:            #282a36;
+  --bg-elevated:   #21222c;
+  --bg-overlay:    #44475a;
+  --border:        #44475a;
+  --border-subtle: #343746;
+  --text:          #f8f8f2;
+  --text-muted:    #6272a4;
+  --text-faint:    #44475a;
+  --accent:        #bd93f9;
+  --accent-subtle: rgba(189, 147, 249, 0.12);
+}
+
+/* Nord */
+[data-theme="nord"] {
+  --bg:            #2e3440;
+  --bg-elevated:   #3b4252;
+  --bg-overlay:    #434c5e;
+  --border:        #4c566a;
+  --border-subtle: #434c5e;
+  --text:          #eceff4;
+  --text-muted:    #d8dee9;
+  --text-faint:    #4c566a;
+  --accent:        #88c0d0;
+  --accent-subtle: rgba(136, 192, 208, 0.12);
+}
+
+/* Tokyo Night */
+[data-theme="tokyo-night"] {
+  --bg:            #1a1b26;
+  --bg-elevated:   #16161e;
+  --bg-overlay:    #24283b;
+  --border:        #33467c;
+  --border-subtle: #24283b;
+  --text:          #c0caf5;
+  --text-muted:    #787c99;
+  --text-faint:    #414868;
+  --accent:        #7aa2f7;
+  --accent-subtle: rgba(122, 162, 247, 0.12);
+}
+
+/* ── Scrollbars ───────────────────────────────────────────────── */
 
 @layer utilities {
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: #333 transparent;
+    scrollbar-color: var(--border) transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 9999px;
+  }
+}
+
+/* ── Form elements ────────────────────────────────────────────── */
+
+@layer components {
+  .field {
+    background: var(--bg-overlay);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 0.875rem;
+    color: var(--text);
+    outline: none;
+    width: 100%;
+    font-family: inherit;
+  }
+  .field::placeholder { color: var(--text-faint); }
+  .field:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-subtle);
+  }
+
+  /* Custom select arrow */
+  select.field {
+    appearance: none;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 28px;
   }
 }
