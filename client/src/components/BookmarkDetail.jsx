@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react'
 import { clsx } from 'clsx'
 
-const CATEGORIES = ['Design', 'Dev', 'Tools', 'Threads', 'Reads', 'Uncategorized']
-
 function SectionLabel({ children }) {
   return (
     <label className="text-[10px] font-semibold uppercase tracking-widest text-ink-low">
@@ -48,7 +46,8 @@ export function BookmarkDetail({ bookmark, onClose, onUpdate, categories = [] })
 
   const handleCategoryChange = (val) => {
     setCategory(val)
-    save({ category: val })
+    setSubcategory(null)
+    save({ category: val, subcategory: null })
   }
 
   return (
@@ -140,7 +139,7 @@ export function BookmarkDetail({ bookmark, onClose, onUpdate, categories = [] })
               onChange={e => handleCategoryChange(e.target.value)}
               className="field"
             >
-              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              {categories.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
             </select>
           </div>
 
