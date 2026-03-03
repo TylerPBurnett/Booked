@@ -11,10 +11,11 @@ function SectionLabel({ children }) {
   )
 }
 
-export function BookmarkDetail({ bookmark, onClose, onUpdate }) {
+export function BookmarkDetail({ bookmark, onClose, onUpdate, categories = [] }) {
   const [tags, setTags] = useState([])
   const [notes, setNotes] = useState('')
   const [category, setCategory] = useState('')
+  const [subcategory, setSubcategory] = useState(null)
   const [newTag, setNewTag] = useState('')
 
   useEffect(() => {
@@ -22,6 +23,7 @@ export function BookmarkDetail({ bookmark, onClose, onUpdate }) {
       setTags(bookmark.tags || [])
       setNotes(bookmark.notes || '')
       setCategory(bookmark.category || 'Uncategorized')
+      setSubcategory(bookmark.subcategory || null)
     }
   }, [bookmark])
 
@@ -141,6 +143,31 @@ export function BookmarkDetail({ bookmark, onClose, onUpdate }) {
               {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
+
+          {/* Subcategory */}
+          {(() => {
+            const parentCat = categories.find(c => c.name === category)
+            if (!parentCat || parentCat.children.length === 0) return null
+            return (
+              <div className="flex flex-col gap-2">
+                <SectionLabel>Subcategory</SectionLabel>
+                <select
+                  value={subcategory || ''}
+                  onChange={e => {
+                    const val = e.target.value || null
+                    setSubcategory(val)
+                    save({ subcategory: val })
+                  }}
+                  className="field"
+                >
+                  <option value="">— None —</option>
+                  {parentCat.children.map(sub => (
+                    <option key={sub.name} value={sub.name}>{sub.name}</option>
+                  ))}
+                </select>
+              </div>
+            )
+          })()}
 
           {/* Tags */}
           <div className="flex flex-col gap-2">
