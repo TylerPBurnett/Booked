@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { ThemeProvider } from './context/ThemeContext.jsx'
 import { useBookmarks } from './hooks/useBookmarks.js'
 import { useFilters } from './hooks/useFilters.js'
@@ -16,15 +16,17 @@ function BookedApp() {
   const { categories, createCategory, renameCategory: renameCat, deleteCategory, reorderCategories } = useCategories()
   const { query, setQuery, results } = useFuzzySearch(filters.filtered)
   const [selectedId, setSelectedId] = useState(null)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(
-    () => localStorage.getItem('booked-sidebar-collapsed') === 'true'
-  )
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try { return localStorage.getItem('booked-sidebar-collapsed') === 'true' } catch { return false }
+  })
 
   const toggleSidebar = () => setSidebarCollapsed(prev => {
     const next = !prev
-    localStorage.setItem('booked-sidebar-collapsed', String(next))
+    try { localStorage.setItem('booked-sidebar-collapsed', String(next)) } catch {}
     return next
   })
+
+  const handleCardClick = useCallback((id) => setSelectedId(id), [])
 
   const selectedBookmark = bookmarks.find(b => b.id === selectedId) || null
 
@@ -105,7 +107,7 @@ function BookedApp() {
                 <BookmarkCard
                   key={b.id}
                   bookmark={b}
-                  onClick={() => setSelectedId(b.id)}
+                  onClick={handleCardClick}
                 />
               ))}
             </div>

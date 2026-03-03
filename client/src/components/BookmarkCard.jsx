@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { clsx } from 'clsx'
 
 const CATEGORY_STYLE = {
@@ -27,13 +28,13 @@ function formatCount(n) {
   return String(n)
 }
 
-export function BookmarkCard({ bookmark, onClick }) {
+export const BookmarkCard = memo(function BookmarkCard({ bookmark, onClick }) {
   const { author, text, tags, category, metrics, media, postedAt } = bookmark
   const style = CATEGORY_STYLE[category] || CATEGORY_STYLE.Uncategorized
 
   return (
     <article
-      onClick={onClick}
+      onClick={() => onClick(bookmark.id)}
       className={clsx(
         'group bg-lift border border-wire rounded-xl p-4 flex flex-col gap-3 cursor-pointer',
         'transition-all duration-150 hover:bg-float hover:border-wire hover:shadow-lg hover:shadow-black/5',
@@ -130,4 +131,4 @@ export function BookmarkCard({ bookmark, onClick }) {
       </div>
     </article>
   )
-}
+})

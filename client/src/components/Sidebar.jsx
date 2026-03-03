@@ -72,10 +72,17 @@ const TAGS_ICON = (
   </svg>
 )
 
-const SYNC_ICON = (spinning) => (
-  <svg className={clsx('w-4 h-4 shrink-0', spinning && 'animate-spin')} viewBox="0 0 16 16" fill="none">
+const SYNC_ICON_IDLE = (
+  <svg className="w-4 h-4 shrink-0" viewBox="0 0 16 16" fill="none">
     <path d="M13.5 8A5.5 5.5 0 1 1 9 2.6M9 1v3M9 1L7 3M9 1l2 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
+)
+const SYNC_ICON_SPINNING = (
+  <div className="animate-spin w-4 h-4 shrink-0">
+    <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none">
+      <path d="M13.5 8A5.5 5.5 0 1 1 9 2.6M9 1v3M9 1L7 3M9 1l2 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  </div>
 )
 
 function getCategoryIcon(cat) {
@@ -742,7 +749,7 @@ export function Sidebar({
               disabled={syncing}
               className={clsx('flex items-center gap-2 rounded-lg text-xs font-medium bg-float hover:bg-wire/10 text-ink-mid hover:text-ink border border-wire transition-all disabled:opacity-50', collapsed ? 'w-full justify-center p-2.5' : 'w-full px-3 py-2')}
             >
-              {SYNC_ICON(syncing)}
+              {syncing ? SYNC_ICON_SPINNING : SYNC_ICON_IDLE}
               <span className={clsx('transition-[opacity] duration-150 whitespace-nowrap', collapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100')}>
                 {syncing ? 'Syncing…' : 'Sync bookmarks'}
               </span>

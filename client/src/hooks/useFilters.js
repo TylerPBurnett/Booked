@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 
 export const SORT_OPTIONS = [
   { value: 'savedAt_desc', label: 'Saved (newest)' },
@@ -30,8 +30,6 @@ export function useFilters(bookmarks) {
   const [hasMediaOnly, setHasMediaOnly] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
 
-  useEffect(() => { setSubcategory(null) }, [category])
-
   const filtered = useMemo(() => {
     let result = [...bookmarks]
     if (!showArchived) result = result.filter(b => !b.archived)
@@ -39,7 +37,12 @@ export function useFilters(bookmarks) {
       result = result.filter(b => b.category === category)
       if (subcategory) result = result.filter(b => b.subcategory === subcategory)
     }
-    if (selectedTags.length > 0) result = result.filter(b => selectedTags.every(t => b.tags.includes(t)))
+    if (selectedTags.length > 0) {
+      result = result.filter(b => {
+        const tagSet = new Set(b.tags)
+        return selectedTags.every(t => tagSet.has(t))
+      })
+    }
     if (hasMediaOnly) result = result.filter(b => b.media?.length > 0)
 
     if (timeRange !== 'all') {
@@ -52,14 +55,12 @@ export function useFilters(bookmarks) {
     const field = sort.slice(0, lastUnderscore)
     const dir = sort.slice(lastUnderscore + 1)
 
-    result.sort((a, b) => {
+    return result.toSorted((a, b) => {
       const aVal = getVal(a, field)
       const bVal = getVal(b, field)
       if (typeof aVal === 'string') return dir === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal)
       return dir === 'asc' ? (aVal || 0) - (bVal || 0) : (bVal || 0) - (aVal || 0)
     })
-
-    return result
   }, [bookmarks, category, subcategory, selectedTags, sort, timeRange, hasMediaOnly, showArchived])
 
   return {
