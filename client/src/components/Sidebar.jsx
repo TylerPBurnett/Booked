@@ -1,4 +1,21 @@
 import { useState, useEffect, useRef } from 'react'
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  DragOverlay,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  arrayMove,
+  useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { clsx } from 'clsx'
 import { useTheme, THEMES } from '../context/ThemeContext.jsx'
 
@@ -236,6 +253,8 @@ function CategoryRow({
   onClick, onToggleExpand,
   onAdd, onRename, onDelete,
   collapsed: sidebarCollapsed,
+  dragHandleListeners = null,
+  dragHandleAttributes = {},
 }) {
   const [editing, setEditing] = useState(false)
   const [editVal, setEditVal] = useState(name)
@@ -301,6 +320,22 @@ function CategoryRow({
             </button>
           ) : (
             <span className="w-5 shrink-0" />
+          )}
+
+          {depth === 0 && !isProtected && dragHandleListeners && (
+            <button
+              {...dragHandleListeners}
+              {...dragHandleAttributes}
+              tabIndex={-1}
+              className="cursor-grab active:cursor-grabbing p-1 shrink-0 text-ink-low opacity-0 group-hover/row:opacity-100 hover:text-ink-mid transition-opacity touch-none"
+              onClick={e => e.stopPropagation()}
+            >
+              <svg className="w-3 h-3" viewBox="0 0 8 14" fill="currentColor">
+                <circle cx="2" cy="2"  r="1.2"/><circle cx="6" cy="2"  r="1.2"/>
+                <circle cx="2" cy="7"  r="1.2"/><circle cx="6" cy="7"  r="1.2"/>
+                <circle cx="2" cy="12" r="1.2"/><circle cx="6" cy="12" r="1.2"/>
+              </svg>
+            </button>
           )}
 
           <button
@@ -412,6 +447,36 @@ function AddInput({ placeholder, onAdd, onCancel }) {
   )
 }
 
+// ── Sortable category row (DnD wrapper) ────────────────────────
+
+function SortableCategoryRow({ id, ...props }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id })
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.4 : 1,
+      }}
+    >
+      <CategoryRow
+        {...props}
+        dragHandleListeners={listeners}
+        dragHandleAttributes={attributes}
+      />
+    </div>
+  )
+}
+
 // ── Sidebar ────────────────────────────────────────────────────
 
 export function Sidebar({
@@ -425,10 +490,31 @@ export function Sidebar({
   onCreateCategory,
   onRenameCategory,
   onDeleteCategory,
+  onReorderCategories,
 }) {
   const [expandedCats, setExpandedCats] = useState({})
   const [addingTop, setAddingTop] = useState(false)
   const [addingSub, setAddingSub] = useState(null)
+  const [activeId, setActiveId] = useState(null)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
+
+  const draggable = categories.filter(c => c.name !== 'Uncategorized')
+  const uncategorized = categories.find(c => c.name === 'Uncategorized')
+  const activeCategory = draggable.find(c => c.name === activeId)
+
+  function handleDragEnd({ active, over }) {
+    setActiveId(null)
+    if (!over || active.id === over.id) return
+    const oldIndex = draggable.findIndex(c => c.name === active.id)
+    const newIndex = draggable.findIndex(c => c.name === over.id)
+    const reordered = arrayMove(draggable, oldIndex, newIndex)
+    const newOrder = [...reordered.map(c => c.name), ...(uncategorized ? ['Uncategorized'] : [])]
+    onReorderCategories(newOrder)
+  }
 
   const toggleExpand = (name) =>
     setExpandedCats(prev => ({ ...prev, [name]: !prev[name] }))
@@ -472,56 +558,129 @@ export function Sidebar({
         />
 
         {/* Category tree */}
-        {categories.map(cat => (
-          <div key={cat.name}>
-            <CategoryRow
-              name={cat.name}
-              count={cat.count}
-              active={category === cat.name && !subcategory}
-              depth={0}
-              expanded={expandedCats[cat.name]}
-              hasChildren={cat.children.length > 0}
-              onClick={() => { setCategory(cat.name); setSubcategory(null) }}
-              onToggleExpand={() => toggleExpand(cat.name)}
-              onAdd={() => setAddingSub(cat.name)}
-              onRename={(newName) => onRenameCategory(cat.name, newName)}
-              onDelete={() => onDeleteCategory(cat.name)}
-              collapsed={collapsed}
-            />
-
-            {/* Subcategories */}
-            {!collapsed && expandedCats[cat.name] && (
-              <div className="space-y-0.5">
-                {cat.children.map(sub => (
-                  <CategoryRow
-                    key={sub.name}
-                    name={sub.name}
-                    count={sub.count}
-                    active={category === cat.name && subcategory === sub.name}
-                    depth={1}
-                    expanded={false}
-                    hasChildren={false}
-                    onClick={() => { setCategory(cat.name); setSubcategory(sub.name) }}
-                    onToggleExpand={null}
-                    onAdd={null}
-                    onRename={(newName) => onRenameCategory(sub.name, newName, cat.name)}
-                    onDelete={() => onDeleteCategory(sub.name, cat.name)}
+        {!collapsed ? (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={({ active }) => setActiveId(active.id)}
+            onDragEnd={handleDragEnd}
+            onDragCancel={() => setActiveId(null)}
+          >
+            <SortableContext
+              items={draggable.map(c => c.name)}
+              strategy={verticalListSortingStrategy}
+            >
+              {draggable.map(cat => (
+                <div key={cat.name}>
+                  <SortableCategoryRow
+                    id={cat.name}
+                    name={cat.name}
+                    count={cat.count}
+                    active={category === cat.name && !subcategory}
+                    depth={0}
+                    expanded={expandedCats[cat.name]}
+                    hasChildren={cat.children.length > 0}
+                    onClick={() => { setCategory(cat.name); setSubcategory(null) }}
+                    onToggleExpand={() => toggleExpand(cat.name)}
+                    onAdd={() => setAddingSub(cat.name)}
+                    onRename={(newName) => onRenameCategory(cat.name, newName)}
+                    onDelete={() => onDeleteCategory(cat.name)}
                     collapsed={false}
                   />
-                ))}
-                {addingSub === cat.name && (
-                  <div className="pl-6">
-                    <AddInput
-                      placeholder="Subcategory name…"
-                      onAdd={(name) => { onCreateCategory(name, cat.name); setAddingSub(null) }}
-                      onCancel={() => setAddingSub(null)}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        ))}
+                  {expandedCats[cat.name] && (
+                    <div className="space-y-0.5">
+                      {cat.children.map(sub => (
+                        <CategoryRow
+                          key={sub.name}
+                          name={sub.name}
+                          count={sub.count}
+                          active={category === cat.name && subcategory === sub.name}
+                          depth={1}
+                          expanded={false}
+                          hasChildren={false}
+                          onClick={() => { setCategory(cat.name); setSubcategory(sub.name) }}
+                          onToggleExpand={null}
+                          onAdd={null}
+                          onRename={(newName) => onRenameCategory(sub.name, newName, cat.name)}
+                          onDelete={() => onDeleteCategory(sub.name, cat.name)}
+                          collapsed={false}
+                        />
+                      ))}
+                      {addingSub === cat.name && (
+                        <div className="pl-6">
+                          <AddInput
+                            placeholder="Subcategory name…"
+                            onAdd={(name) => { onCreateCategory(name, cat.name); setAddingSub(null) }}
+                            onCancel={() => setAddingSub(null)}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </SortableContext>
+
+            <DragOverlay>
+              {activeCategory && (
+                <div className="bg-lift border border-wire rounded-lg shadow-xl opacity-95">
+                  <CategoryRow
+                    name={activeCategory.name}
+                    count={activeCategory.count}
+                    active={false}
+                    depth={0}
+                    expanded={false}
+                    hasChildren={activeCategory.children.length > 0}
+                    onClick={() => {}}
+                    onToggleExpand={null}
+                    onAdd={null}
+                    onRename={null}
+                    onDelete={null}
+                    collapsed={false}
+                  />
+                </div>
+              )}
+            </DragOverlay>
+          </DndContext>
+        ) : (
+          <>
+            {draggable.map(cat => (
+              <CategoryRow
+                key={cat.name}
+                name={cat.name}
+                count={cat.count}
+                active={category === cat.name && !subcategory}
+                depth={0}
+                expanded={false}
+                hasChildren={false}
+                onClick={() => { setCategory(cat.name); setSubcategory(null) }}
+                onToggleExpand={null}
+                onAdd={null}
+                onRename={null}
+                onDelete={null}
+                collapsed={true}
+              />
+            ))}
+          </>
+        )}
+
+        {/* Uncategorized — always pinned last, never draggable */}
+        {uncategorized && (
+          <CategoryRow
+            name="Uncategorized"
+            count={uncategorized.count}
+            active={category === 'Uncategorized' && !subcategory}
+            depth={0}
+            expanded={false}
+            hasChildren={false}
+            onClick={() => { setCategory('Uncategorized'); setSubcategory(null) }}
+            onToggleExpand={null}
+            onAdd={null}
+            onRename={null}
+            onDelete={null}
+            collapsed={collapsed}
+          />
+        )}
 
         {/* Add top-level category */}
         {!collapsed && (
