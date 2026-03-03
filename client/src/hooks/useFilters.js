@@ -1,9 +1,8 @@
 import { useState, useMemo } from 'react'
 
 export const SORT_OPTIONS = [
-  { value: 'bookmarkedAt_desc', label: 'Bookmarked (newest)' },
-  { value: 'bookmarkedAt_asc', label: 'Bookmarked (oldest)' },
   { value: 'postedAt_desc', label: 'Posted (newest)' },
+  { value: 'postedAt_asc', label: 'Posted (oldest)' },
   { value: 'metrics.likes_desc', label: 'Most liked' },
   { value: 'metrics.retweets_desc', label: 'Most retweeted' },
   { value: 'author.handle_asc', label: 'Author A–Z' },
@@ -23,7 +22,7 @@ function getVal(obj, path) {
 export function useFilters(bookmarks) {
   const [category, setCategory] = useState('All')
   const [selectedTags, setSelectedTags] = useState([])
-  const [sort, setSort] = useState('bookmarkedAt_desc')
+  const [sort, setSort] = useState('postedAt_desc')
   const [timeRange, setTimeRange] = useState('all')
   const [hasMediaOnly, setHasMediaOnly] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
@@ -38,7 +37,7 @@ export function useFilters(bookmarks) {
     if (timeRange !== 'all') {
       const days = { week: 7, month: 30, year: 365 }[timeRange]
       const cutoff = new Date(Date.now() - days * 86400000)
-      result = result.filter(b => new Date(b.bookmarkedAt) >= cutoff)
+      result = result.filter(b => new Date(b.postedAt) >= cutoff)
     }
 
     const lastUnderscore = sort.lastIndexOf('_')
