@@ -2,5 +2,6 @@ node_modules/
 .env
 data/bookmarks.json
 data/meta.json
+data/playwright-session.json
 *.log
 .DS_Store
