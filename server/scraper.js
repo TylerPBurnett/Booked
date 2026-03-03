@@ -5,11 +5,12 @@ import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const SESSION_PATH = path.join(__dirname, '..', 'data', 'playwright-session.json')
+const INCREMENTAL_KNOWN_STREAK_LIMIT = 40
 
 function buildStopCondition(range, count, lastSyncedAt) {
-  if (count) return { mode: 'count', limit: parseInt(count) }
+  if (count) return { mode: 'count', limit: parseInt(count, 10) }
   if (range === 'all') return { mode: 'all' }
-  if (range === 'sync' && lastSyncedAt) return { mode: 'since', cutoff: new Date(lastSyncedAt) }
+  if (range === 'sync') return { mode: 'incremental' }
   const days = { week: 7, month: 30, year: 365 }[range] || 30
   return { mode: 'since', cutoff: new Date(Date.now() - days * 86400000) }
 }
@@ -83,7 +84,7 @@ function extractBookmarksFromResponse(json) {
   }
 }
 
-export async function scrapeBookmarks({ range = 'sync', count, lastSyncedAt } = {}) {
+export async function scrapeBookmarks({ range = 'sync', count, lastSyncedAt, knownIds = [] } = {}) {
   if (!existsSync(SESSION_PATH)) {
     throw new Error(
       'No Playwright session found. Run this first:\n' +
@@ -94,6 +95,8 @@ export async function scrapeBookmarks({ range = 'sync', count, lastSyncedAt } = 
 
   const stopCondition = buildStopCondition(range, count, lastSyncedAt)
   const bookmarksById = new Map()
+  const knownIdSet = new Set(knownIds)
+  let knownStreak = 0
 
   const browser = await chromium.launch({ headless: false })
   const context = await browser.newContext({ storageState: SESSION_PATH })
@@ -107,7 +110,13 @@ export async function scrapeBookmarks({ range = 'sync', count, lastSyncedAt } = 
       const json = await response.json()
       const extracted = extractBookmarksFromResponse(json)
       for (const bm of extracted) {
-        if (!bookmarksById.has(bm.id)) bookmarksById.set(bm.id, bm)
+        if (bookmarksById.has(bm.id)) continue
+        bookmarksById.set(bm.id, bm)
+
+        if (stopCondition.mode === 'incremental') {
+          if (knownIdSet.has(bm.id)) knownStreak++
+          else knownStreak = 0
+        }
       }
     } catch { /* not JSON */ }
   })
@@ -132,6 +141,8 @@ export async function scrapeBookmarks({ range = 'sync', count, lastSyncedAt } = 
 
     if (stopCondition.mode === 'count' && bookmarksById.size >= stopCondition.limit) break
 
+    if (stopCondition.mode === 'incremental' && knownStreak >= INCREMENTAL_KNOWN_STREAK_LIMIT) break
+
     if (stopCondition.mode === 'since' && bookmarksById.size > 0) {
       const oldest = Array.from(bookmarksById.values()).reduce((a, b) =>
         new Date(a.bookmarkedAt) < new Date(b.bookmarkedAt) ? a : b
@@ -147,8 +158,7 @@ export async function scrapeBookmarks({ range = 'sync', count, lastSyncedAt } = 
 
   await browser.close()
 
-  let results = Array.from(bookmarksById.values())
-  results.sort((a, b) => new Date(b.bookmarkedAt) - new Date(a.bookmarkedAt))
+  const results = Array.from(bookmarksById.values())
 
   if (stopCondition.mode === 'count') return results.slice(0, stopCondition.limit)
   if (stopCondition.mode === 'since') return results.filter(b => new Date(b.bookmarkedAt) >= stopCondition.cutoff)

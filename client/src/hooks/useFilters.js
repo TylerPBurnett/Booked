@@ -1,6 +1,8 @@
 import { useState, useMemo, useEffect } from 'react'
 
 export const SORT_OPTIONS = [
+  { value: 'savedAt_desc', label: 'Saved (newest)' },
+  { value: 'savedAt_asc', label: 'Saved (oldest)' },
   { value: 'postedAt_desc', label: 'Posted (newest)' },
   { value: 'postedAt_asc', label: 'Posted (oldest)' },
   { value: 'metrics.likes_desc', label: 'Most liked' },
@@ -23,7 +25,7 @@ export function useFilters(bookmarks) {
   const [category, setCategory] = useState('All')
   const [subcategory, setSubcategory] = useState(null)
   const [selectedTags, setSelectedTags] = useState([])
-  const [sort, setSort] = useState('postedAt_desc')
+  const [sort, setSort] = useState('savedAt_desc')
   const [timeRange, setTimeRange] = useState('all')
   const [hasMediaOnly, setHasMediaOnly] = useState(false)
   const [showArchived, setShowArchived] = useState(false)

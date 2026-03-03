@@ -7,8 +7,44 @@ const DATA_DIR = process.env.BOOKED_DATA_DIR || join(__dirname, '..', 'data')
 const BOOKMARKS_PATH = join(DATA_DIR, 'bookmarks.json')
 const META_PATH = join(DATA_DIR, 'meta.json')
 
+function compareSavedOrder(a, b) {
+  const aSavedAt = new Date(a.savedAt || a.bookmarkedAt || a.postedAt || 0).getTime()
+  const bSavedAt = new Date(b.savedAt || b.bookmarkedAt || b.postedAt || 0).getTime()
+  if (bSavedAt !== aSavedAt) return bSavedAt - aSavedAt
+
+  const aSeq = Number.isFinite(a.savedSeq) ? a.savedSeq : Number.MAX_SAFE_INTEGER
+  const bSeq = Number.isFinite(b.savedSeq) ? b.savedSeq : Number.MAX_SAFE_INTEGER
+  return aSeq - bSeq
+}
+
+function migrateBookmarks(bookmarks) {
+  let changed = false
+
+  const migrated = bookmarks.map((bookmark, index) => {
+    let next = bookmark
+
+    if (!next.savedAt) {
+      next = { ...next, savedAt: next.bookmarkedAt || next.postedAt || new Date().toISOString() }
+      changed = true
+    }
+
+    if (!Number.isFinite(next.savedSeq)) {
+      next = { ...next, savedSeq: index }
+      changed = true
+    }
+
+    return next
+  })
+
+  if (changed) migrated.sort(compareSavedOrder)
+  return { migrated, changed }
+}
+
 export function readBookmarks() {
-  return JSON.parse(readFileSync(BOOKMARKS_PATH, 'utf-8'))
+  const raw = JSON.parse(readFileSync(BOOKMARKS_PATH, 'utf-8'))
+  const { migrated, changed } = migrateBookmarks(raw)
+  if (changed) writeBookmarks(migrated)
+  return migrated
 }
 
 export function writeBookmarks(bookmarks) {
@@ -31,20 +67,25 @@ export function upsertBookmarks(incoming) {
   const existing = readBookmarks()
   const existingById = Object.fromEntries(existing.map(b => [b.id, b]))
   let newCount = 0
+  const savedAtForSync = new Date().toISOString()
+  let incomingSeq = 0
 
   for (const bookmark of incoming) {
     if (existingById[bookmark.id]) {
       // Update metrics only — preserve user data (tags, category, notes)
       existingById[bookmark.id].metrics = bookmark.metrics
     } else {
-      existingById[bookmark.id] = bookmark
+      existingById[bookmark.id] = {
+        ...bookmark,
+        savedAt: bookmark.savedAt || savedAtForSync,
+        savedSeq: Number.isFinite(bookmark.savedSeq) ? bookmark.savedSeq : incomingSeq,
+      }
+      incomingSeq++
       newCount++
     }
   }
 
-  const merged = Object.values(existingById).sort(
-    (a, b) => new Date(b.bookmarkedAt) - new Date(a.bookmarkedAt)
-  )
+  const merged = Object.values(existingById).sort(compareSavedOrder)
   writeBookmarks(merged)
 
   const meta = readMeta()

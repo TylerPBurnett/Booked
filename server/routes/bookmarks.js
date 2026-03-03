@@ -11,7 +11,7 @@ router.get('/', (req, res) => {
   if (category && category !== 'All') bookmarks = bookmarks.filter(b => b.category === category)
   if (tag) bookmarks = bookmarks.filter(b => b.tags.includes(tag))
 
-  const sort = req.query.sort || 'bookmarkedAt_desc'
+  const sort = req.query.sort || 'savedAt_desc'
   const lastUnderscore = sort.lastIndexOf('_')
   const field = sort.slice(0, lastUnderscore)
   const dir = sort.slice(lastUnderscore + 1)
