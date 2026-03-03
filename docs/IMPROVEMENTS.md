@@ -4,7 +4,32 @@ Ordered roughly by impact-to-effort ratio. Items near the top deliver the most v
 
 ---
 
+## Recently Completed
+
+- **Date fix** — `bookmarkedAt` fell back to `new Date()` (sync time) when X didn't return `bookmarked_at`. Now falls back to `postedAt` (tweet date). 5,066 existing records migrated.
+- **500-bookmark cap removed** — client now fetches up to 10,000 bookmarks. Grid renders in pages of 100 via IntersectionObserver infinite scroll.
+- **Misleading sort label fixed** — "Bookmarked (newest)" renamed to "Posted (newest)" since X withholds real bookmark timestamps for ~99% of items. `postedAt` is now the authoritative sort field.
+- **Sidebar collapse** — collapsible sidebar with localStorage persistence added.
+- **Theme system** — `ThemeProvider` context wired in; dark/light groundwork laid.
+
+---
+
 ## High Priority
+
+### 0. Reddit Saved Posts
+
+**What:** Pull saved posts and comments from Reddit into the same library as X bookmarks. Cards show subreddit, title, score, and a link. Category/tag/notes system applies identically.
+
+**Why:** Reddit saved posts are the other major "read-it-later" bucket for most users. A unified library across both sources is the core value proposition of Booked as a multi-source tool.
+
+**Implementation:**
+- OAuth2 with Reddit API (`/api/v1/me/saved`) — standard PKCE flow, token stored in `data/reddit-session.json`
+- `server/reddit-scraper.js` — pages through saved items, maps to Booked bookmark schema with `source: 'reddit'`
+- Add `source` field to bookmark schema (`'x' | 'reddit'`) for filtering
+- Source filter pill in sidebar (All / X / Reddit)
+- Sync route extended: `POST /api/sync` accepts `{ source: 'reddit' }` or syncs both by default
+
+---
 
 ### 1. Post-Sync Triage Inbox
 
@@ -276,9 +301,9 @@ The flat JSON file approach works well up to ~5,000 bookmarks. Beyond that, read
 
 The app currently has minimal error handling in the React client. `useBookmarks` doesn't expose an `error` state to the UI — if the server is down, the user sees a blank screen. Add `error` state to `useBookmarks` and render a proper error card when the API fails to respond.
 
-### Pagination for Large Libraries
+### Virtual Scrolling for Large Libraries
 
-`useBookmarks` fetches all bookmarks with `limit=500`. As the collection grows, this load becomes heavy. Implement virtual scrolling (e.g., `@tanstack/react-virtual`) or cursor-based pagination — fetch the next page as the user scrolls. The server already supports `limit` and `offset`.
+`useBookmarks` fetches up to 10,000 bookmarks and the grid uses IntersectionObserver to render in pages of 100. Works well today but as the library grows past 10k, consider true virtual scrolling (`@tanstack/react-virtual`) or server-side cursor pagination. The server already supports `limit` and `offset`.
 
 ### Server Tests for Scraper + Classifier
 
