@@ -353,18 +353,7 @@ function CategoryRow({
 
           {!isProtected && (
             <div className="flex items-center gap-0.5 opacity-0 group-hover/row:opacity-100 transition-opacity shrink-0 pr-1">
-              {depth === 0 && onAdd && (
-                <button
-                  onClick={onAdd}
-                  title="Add subcategory"
-                  className="w-5 h-5 flex items-center justify-center rounded text-ink-low hover:text-ink hover:bg-float transition-colors"
-                >
-                  <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
-                    <path d="M6 2v8M2 6h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                  </svg>
-                </button>
-              )}
-              <button
+                  <button
                 onClick={() => { setEditVal(name); setEditing(true) }}
                 title="Rename"
                 className="w-5 h-5 flex items-center justify-center rounded text-ink-low hover:text-ink hover:bg-float transition-colors"
@@ -578,16 +567,16 @@ export function Sidebar({
                     active={category === cat.name && !subcategory}
                     depth={0}
                     expanded={expandedCats[cat.name]}
-                    hasChildren={cat.children.length > 0}
+                    hasChildren={true}
                     onClick={() => { setCategory(cat.name); setSubcategory(null) }}
                     onToggleExpand={() => toggleExpand(cat.name)}
-                    onAdd={() => setAddingSub(cat.name)}
+                    onAdd={null}
                     onRename={(newName) => onRenameCategory(cat.name, newName)}
                     onDelete={() => onDeleteCategory(cat.name)}
                     collapsed={false}
                   />
                   {expandedCats[cat.name] && (
-                    <div className="space-y-0.5">
+                    <div className="space-y-0.5 pb-0.5">
                       {cat.children.map(sub => (
                         <CategoryRow
                           key={sub.name}
@@ -605,7 +594,7 @@ export function Sidebar({
                           collapsed={false}
                         />
                       ))}
-                      {addingSub === cat.name && (
+                      {addingSub === cat.name ? (
                         <div className="pl-6">
                           <AddInput
                             placeholder="Subcategory name…"
@@ -613,6 +602,16 @@ export function Sidebar({
                             onCancel={() => setAddingSub(null)}
                           />
                         </div>
+                      ) : (
+                        <button
+                          onClick={() => setAddingSub(cat.name)}
+                          className="w-full flex items-center gap-1.5 pl-9 pr-2 py-1 rounded-lg text-xs text-ink-low hover:text-ink-mid hover:bg-float transition-colors"
+                        >
+                          <svg className="w-3 h-3 shrink-0" viewBox="0 0 12 12" fill="none">
+                            <path d="M6 2v8M2 6h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                          </svg>
+                          Add subcategory
+                        </button>
                       )}
                     </div>
                   )}
