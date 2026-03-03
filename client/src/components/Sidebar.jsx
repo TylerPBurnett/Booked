@@ -326,7 +326,6 @@ function CategoryRow({
             <button
               {...dragHandleListeners}
               {...dragHandleAttributes}
-              tabIndex={-1}
               className="cursor-grab active:cursor-grabbing p-1 shrink-0 text-ink-low opacity-0 group-hover/row:opacity-100 hover:text-ink-mid transition-opacity touch-none"
               onClick={e => e.stopPropagation()}
             >
@@ -513,7 +512,7 @@ export function Sidebar({
     const newIndex = draggable.findIndex(c => c.name === over.id)
     const reordered = arrayMove(draggable, oldIndex, newIndex)
     const newOrder = [...reordered.map(c => c.name), ...(uncategorized ? ['Uncategorized'] : [])]
-    onReorderCategories(newOrder)
+    if (onReorderCategories) onReorderCategories(newOrder)
   }
 
   const toggleExpand = (name) =>
