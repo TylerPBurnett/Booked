@@ -16,7 +16,10 @@ export function writeBookmarks(bookmarks) {
 }
 
 export function readMeta() {
-  return JSON.parse(readFileSync(META_PATH, 'utf-8'))
+  const raw = JSON.parse(readFileSync(META_PATH, 'utf-8'))
+  const migrated = migrateMeta(raw)
+  if (migrated !== raw) writeFileSync(META_PATH, JSON.stringify(migrated, null, 2))
+  return migrated
 }
 
 export function writeMeta(meta) {
@@ -50,4 +53,77 @@ export function upsertBookmarks(incoming) {
   writeMeta(meta)
 
   return newCount
+}
+
+// ── Category tree helpers ──────────────────────────────────────
+
+/** Convert old flat string array to new nested format. No-op if already migrated. */
+export function migrateMeta(meta) {
+  if (!Array.isArray(meta.categories) || meta.categories.length === 0) return meta
+  if (typeof meta.categories[0] === 'object') return meta // already migrated
+  return {
+    ...meta,
+    categories: meta.categories.map(name => ({ name, children: [] })),
+  }
+}
+
+/** Flat list of all category names: parents then their children. */
+export function flattenCategories(tree) {
+  return tree.flatMap(cat => [cat.name, ...cat.children])
+}
+
+/** Return new meta with a category added. Throws if name already exists. */
+export function addCategory(meta, name, parent = null) {
+  const allNames = flattenCategories(meta.categories)
+  if (allNames.includes(name)) throw new Error(`Category "${name}" already exists`)
+
+  if (parent) {
+    const parentCat = meta.categories.find(c => c.name === parent)
+    if (!parentCat) throw new Error(`Parent category "${parent}" not found`)
+    return {
+      ...meta,
+      categories: meta.categories.map(c =>
+        c.name === parent ? { ...c, children: [...c.children, name] } : c
+      ),
+    }
+  }
+
+  return { ...meta, categories: [...meta.categories, { name, children: [] }] }
+}
+
+/** Return new meta with a category removed. Throws on protected names. */
+export function removeCategory(meta, name, parent = null) {
+  if (name === 'Uncategorized') throw new Error('Cannot delete Uncategorized')
+
+  if (parent) {
+    return {
+      ...meta,
+      categories: meta.categories.map(c =>
+        c.name === parent ? { ...c, children: c.children.filter(ch => ch !== name) } : c
+      ),
+    }
+  }
+
+  return { ...meta, categories: meta.categories.filter(c => c.name !== name) }
+}
+
+/** Return new meta with a category renamed. Throws on protected names. */
+export function renameCategory(meta, oldName, newName, parent = null) {
+  if (oldName === 'Uncategorized') throw new Error('Cannot rename Uncategorized')
+
+  if (parent) {
+    return {
+      ...meta,
+      categories: meta.categories.map(c =>
+        c.name === parent
+          ? { ...c, children: c.children.map(ch => (ch === oldName ? newName : ch)) }
+          : c
+      ),
+    }
+  }
+
+  return {
+    ...meta,
+    categories: meta.categories.map(c => (c.name === oldName ? { ...c, name: newName } : c)),
+  }
 }

@@ -1,4 +1,11 @@
 import { describe, it, expect } from 'vitest'
+import {
+  migrateMeta,
+  flattenCategories,
+  addCategory,
+  removeCategory,
+  renameCategory,
+} from './data.js'
 
 const makeBookmark = (id, overrides = {}) => ({
   id,
@@ -54,5 +61,91 @@ describe('upsert merge logic', () => {
     const { merged, newCount } = mergeBookmarks(existing, incoming)
     expect(merged).toHaveLength(2)
     expect(newCount).toBe(1)
+  })
+})
+
+describe('migrateMeta', () => {
+  it('converts flat string array to nested objects', () => {
+    const old = { categories: ['Design', 'Dev'], totalBookmarks: 0 }
+    const result = migrateMeta(old)
+    expect(result.categories).toEqual([
+      { name: 'Design', children: [] },
+      { name: 'Dev',    children: [] },
+    ])
+  })
+
+  it('is a no-op if already in new format', () => {
+    const already = { categories: [{ name: 'Design', children: [] }] }
+    expect(migrateMeta(already).categories[0]).toEqual({ name: 'Design', children: [] })
+  })
+})
+
+describe('flattenCategories', () => {
+  it('returns flat list of all names (parents + children)', () => {
+    const tree = [
+      { name: 'Dev', children: ['Frontend', 'Backend'] },
+      { name: 'Design', children: [] },
+    ]
+    expect(flattenCategories(tree)).toEqual(['Dev', 'Frontend', 'Backend', 'Design'])
+  })
+})
+
+describe('addCategory', () => {
+  it('adds a top-level category', () => {
+    const meta = { categories: [{ name: 'Dev', children: [] }] }
+    const result = addCategory(meta, 'Design')
+    expect(result.categories).toHaveLength(2)
+    expect(result.categories[1].name).toBe('Design')
+  })
+
+  it('adds a subcategory under a parent', () => {
+    const meta = { categories: [{ name: 'Dev', children: [] }] }
+    const result = addCategory(meta, 'Frontend', 'Dev')
+    expect(result.categories[0].children).toContain('Frontend')
+  })
+
+  it('throws if name already exists', () => {
+    const meta = { categories: [{ name: 'Dev', children: [] }] }
+    expect(() => addCategory(meta, 'Dev')).toThrow()
+  })
+})
+
+describe('removeCategory', () => {
+  it('removes a top-level category', () => {
+    const meta = { categories: [{ name: 'Dev', children: [] }, { name: 'Design', children: [] }] }
+    const result = removeCategory(meta, 'Dev')
+    expect(result.categories).toHaveLength(1)
+    expect(result.categories[0].name).toBe('Design')
+  })
+
+  it('removes a subcategory string from its parent', () => {
+    const meta = { categories: [{ name: 'Dev', children: ['Frontend', 'Backend'] }] }
+    const result = removeCategory(meta, 'Frontend', 'Dev')
+    expect(result.categories[0].children).not.toContain('Frontend')
+  })
+
+  it('throws if trying to remove Uncategorized', () => {
+    const meta = { categories: [{ name: 'Uncategorized', children: [] }] }
+    expect(() => removeCategory(meta, 'Uncategorized')).toThrow()
+  })
+})
+
+describe('renameCategory', () => {
+  it('renames a top-level category', () => {
+    const meta = { categories: [{ name: 'Dev', children: [] }] }
+    const result = renameCategory(meta, 'Dev', 'Engineering')
+    expect(result.categories[0].name).toBe('Engineering')
+  })
+
+  it('renames a subcategory within its parent', () => {
+    const meta = { categories: [{ name: 'Dev', children: ['Frontend'] }] }
+    const result = renameCategory(meta, 'Frontend', 'FE', 'Dev')
+    expect(result.categories[0].children).toContain('FE')
+    expect(result.categories[0].children).not.toContain('Frontend')
+  })
+
+  it('throws if trying to rename Uncategorized', () => {
+    const meta = { categories: [{ name: 'Uncategorized', children: [] }] }
+    expect(() => renameCategory(meta, 'Uncategorized', 'Other')).toThrow()
   })
 })
