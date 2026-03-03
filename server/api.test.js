@@ -33,7 +33,11 @@ beforeAll(() => {
   writeFileSync(join(DATA_DIR, 'bookmarks.json'), JSON.stringify([testBookmark], null, 2))
   writeFileSync(join(DATA_DIR, 'meta.json'), JSON.stringify({
     lastSyncedAt: null,
-    categories: ['Design', 'Dev', 'Uncategorized'],
+    categories: [
+      { name: 'Design', children: [] },
+      { name: 'Dev',    children: ['Frontend'] },
+      { name: 'Uncategorized', children: [] },
+    ],
     totalBookmarks: 1
   }, null, 2))
 })
@@ -99,5 +103,72 @@ describe('POST /api/sync', () => {
     const res = await request(app).post('/api/sync').send({})
     expect(res.status).toBe(200)
     expect(res.body).toHaveProperty('newBookmarks')
+  })
+})
+
+describe('GET /api/categories', () => {
+  it('returns category tree with counts', async () => {
+    const res = await request(app).get('/api/categories')
+    expect(res.status).toBe(200)
+    expect(res.body).toBeInstanceOf(Array)
+    expect(res.body[0]).toHaveProperty('name')
+    expect(res.body[0]).toHaveProperty('children')
+    expect(res.body[0]).toHaveProperty('count')
+  })
+})
+
+describe('POST /api/categories', () => {
+  it('creates a top-level category', async () => {
+    const res = await request(app).post('/api/categories').send({ name: 'Tools' })
+    expect(res.status).toBe(201)
+    expect(res.body.name).toBe('Tools')
+  })
+
+  it('creates a subcategory under an existing parent', async () => {
+    const res = await request(app)
+      .post('/api/categories')
+      .send({ name: 'Backend', parent: 'Dev' })
+    expect(res.status).toBe(201)
+    expect(res.body.parent).toBe('Dev')
+  })
+
+  it('returns 409 if name already exists', async () => {
+    const res = await request(app).post('/api/categories').send({ name: 'Design' })
+    expect(res.status).toBe(409)
+  })
+
+  it('returns 400 if name is missing', async () => {
+    const res = await request(app).post('/api/categories').send({})
+    expect(res.status).toBe(400)
+  })
+})
+
+describe('PATCH /api/categories/:name', () => {
+  it('renames a category', async () => {
+    const res = await request(app)
+      .patch('/api/categories/Tools')
+      .send({ name: 'Tooling' })
+    expect(res.status).toBe(200)
+    expect(res.body.name).toBe('Tooling')
+  })
+
+  it('returns 400 trying to rename Uncategorized', async () => {
+    const res = await request(app)
+      .patch('/api/categories/Uncategorized')
+      .send({ name: 'Other' })
+    expect(res.status).toBe(400)
+  })
+})
+
+describe('DELETE /api/categories/:name', () => {
+  it('deletes a category', async () => {
+    const res = await request(app).delete('/api/categories/Tooling')
+    expect(res.status).toBe(200)
+    expect(res.body.ok).toBe(true)
+  })
+
+  it('returns 400 trying to delete Uncategorized', async () => {
+    const res = await request(app).delete('/api/categories/Uncategorized')
+    expect(res.status).toBe(400)
   })
 })

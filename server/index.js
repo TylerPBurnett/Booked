@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url'
 import bookmarksRouter from './routes/bookmarks.js'
 import metaRouter from './routes/meta.js'
 import syncRouter from './routes/sync.js'
+import categoriesRouter from './routes/categories.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const app = express()
@@ -16,6 +17,7 @@ app.use(express.json())
 app.use('/api/bookmarks', bookmarksRouter)
 app.use('/api/meta', metaRouter)
 app.use('/api/sync', syncRouter)
+app.use('/api/categories', categoriesRouter)
 
 // Serve compiled client in production
 const clientDist = join(__dirname, '..', 'client', 'dist')

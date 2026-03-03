@@ -39,7 +39,7 @@ router.patch('/:id', (req, res) => {
   const bookmarks = readBookmarks()
   const idx = bookmarks.findIndex(b => b.id === req.params.id)
   if (idx === -1) return res.status(404).json({ error: 'Not found' })
-  const allowed = ['tags', 'category', 'notes', 'archived']
+  const allowed = ['tags', 'category', 'subcategory', 'notes', 'archived']
   for (const key of allowed) {
     if (req.body[key] !== undefined) bookmarks[idx][key] = req.body[key]
   }
