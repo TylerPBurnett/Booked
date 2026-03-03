@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, vi } from 'vitest'
 import request from 'supertest'
 import { writeFileSync, mkdirSync } from 'fs'
 import { join, dirname } from 'path'
+import { tmpdir } from 'os'
 import { fileURLToPath } from 'url'
 
 // Mock the scraper so POST /api/sync doesn't launch Chrome during tests
@@ -9,8 +10,11 @@ vi.mock('./scraper.js', () => ({
   scrapeBookmarks: vi.fn().mockResolvedValue([])
 }))
 
+// Use an isolated temp directory — NEVER write to the real data/ folder
+const TEST_DATA_DIR = join(tmpdir(), `booked-test-${Date.now()}`)
+process.env.BOOKED_DATA_DIR = TEST_DATA_DIR
+
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const DATA_DIR = join(__dirname, '..', 'data')
 
 const testBookmark = {
   id: 'test-001',
@@ -29,9 +33,9 @@ const testBookmark = {
 }
 
 beforeAll(() => {
-  mkdirSync(DATA_DIR, { recursive: true })
-  writeFileSync(join(DATA_DIR, 'bookmarks.json'), JSON.stringify([testBookmark], null, 2))
-  writeFileSync(join(DATA_DIR, 'meta.json'), JSON.stringify({
+  mkdirSync(TEST_DATA_DIR, { recursive: true })
+  writeFileSync(join(TEST_DATA_DIR, 'bookmarks.json'), JSON.stringify([testBookmark], null, 2))
+  writeFileSync(join(TEST_DATA_DIR, 'meta.json'), JSON.stringify({
     lastSyncedAt: null,
     categories: [
       { name: 'Design', children: [] },
