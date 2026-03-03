@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 
 export const SORT_OPTIONS = [
   { value: 'postedAt_desc', label: 'Posted (newest)' },
@@ -21,16 +21,22 @@ function getVal(obj, path) {
 
 export function useFilters(bookmarks) {
   const [category, setCategory] = useState('All')
+  const [subcategory, setSubcategory] = useState(null)
   const [selectedTags, setSelectedTags] = useState([])
   const [sort, setSort] = useState('postedAt_desc')
   const [timeRange, setTimeRange] = useState('all')
   const [hasMediaOnly, setHasMediaOnly] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
 
+  useEffect(() => { setSubcategory(null) }, [category])
+
   const filtered = useMemo(() => {
     let result = [...bookmarks]
     if (!showArchived) result = result.filter(b => !b.archived)
-    if (category !== 'All') result = result.filter(b => b.category === category)
+    if (category !== 'All') {
+      result = result.filter(b => b.category === category)
+      if (subcategory) result = result.filter(b => b.subcategory === subcategory)
+    }
     if (selectedTags.length > 0) result = result.filter(b => selectedTags.every(t => b.tags.includes(t)))
     if (hasMediaOnly) result = result.filter(b => b.media?.length > 0)
 
@@ -52,10 +58,11 @@ export function useFilters(bookmarks) {
     })
 
     return result
-  }, [bookmarks, category, selectedTags, sort, timeRange, hasMediaOnly, showArchived])
+  }, [bookmarks, category, subcategory, selectedTags, sort, timeRange, hasMediaOnly, showArchived])
 
   return {
-    filtered, category, setCategory, selectedTags, setSelectedTags,
+    filtered, category, setCategory, subcategory, setSubcategory,
+    selectedTags, setSelectedTags,
     sort, setSort, timeRange, setTimeRange,
     hasMediaOnly, setHasMediaOnly, showArchived, setShowArchived,
   }
