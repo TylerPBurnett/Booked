@@ -179,15 +179,19 @@ describe('DELETE /api/categories/:name', () => {
 
 describe('PUT /api/categories/reorder', () => {
   it('reorders categories', async () => {
-    // Seed state has: Design, Dev (with Frontend child), Uncategorized
+    const current = await request(app).get('/api/categories')
+    const names = current.body.map(c => c.name)
+    // Move first category to end
+    const reordered = [...names.slice(1), names[0]]
+
     const res = await request(app)
       .put('/api/categories/reorder')
-      .send({ order: ['Dev', 'Design', 'Uncategorized'] })
+      .send({ order: reordered })
     expect(res.status).toBe(200)
     expect(res.body.ok).toBe(true)
 
     const check = await request(app).get('/api/categories')
-    expect(check.body[0].name).toBe('Dev')
+    expect(check.body[0].name).toBe(reordered[0])
   })
 
   it('returns 400 if order is missing names', async () => {
@@ -201,6 +205,13 @@ describe('PUT /api/categories/reorder', () => {
     const res = await request(app)
       .put('/api/categories/reorder')
       .send({ order: ['Dev', 'Design', 'Ghost'] })
+    expect(res.status).toBe(400)
+  })
+
+  it('returns 400 if order is not an array', async () => {
+    const res = await request(app)
+      .put('/api/categories/reorder')
+      .send({ order: 'Dev' })
     expect(res.status).toBe(400)
   })
 })
