@@ -177,4 +177,8 @@ describe('reorderCategories', () => {
   it('throws if order length does not match category count', () => {
     expect(() => reorderCategories(meta, ['Design', 'Dev'])).toThrow()
   })
+
+  it('throws if nameOrder contains duplicates', () => {
+    expect(() => reorderCategories(meta, ['Dev', 'Dev', 'Design'])).toThrow()
+  })
 })

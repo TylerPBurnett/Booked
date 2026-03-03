@@ -174,6 +174,9 @@ export function reorderCategories(meta, nameOrder) {
   if (nameOrder.length !== meta.categories.length) {
     throw new Error('order must include all categories')
   }
+  if (new Set(nameOrder).size !== nameOrder.length) {
+    throw new Error('nameOrder contains duplicate names')
+  }
   const byName = Object.fromEntries(meta.categories.map(c => [c.name, c]))
   for (const name of nameOrder) {
     if (!byName[name]) throw new Error(`Unknown category "${name}"`)
