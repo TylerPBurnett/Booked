@@ -8,7 +8,8 @@ Ordered roughly by impact-to-effort ratio. Items near the top deliver the most v
 
 - **Date fix** — `bookmarkedAt` fell back to `new Date()` (sync time) when X didn't return `bookmarked_at`. Now falls back to `postedAt` (tweet date). 5,066 existing records migrated.
 - **500-bookmark cap removed** — client now fetches up to 10,000 bookmarks. Grid renders in pages of 100 via IntersectionObserver infinite scroll.
-- **Misleading sort label fixed** — "Bookmarked (newest)" renamed to "Posted (newest)" since X withholds real bookmark timestamps for ~99% of items. `postedAt` is now the authoritative sort field.
+- **Saved-order model** — Added immutable local fields (`savedAt`, `savedSeq`) so Booked can sort by when items were first seen in the app. `Saved (newest)` is now the default sort.
+- **Incremental sync fix** — `--sync` now stops based on a streak of already-known bookmark IDs instead of tweet dates, so newly-bookmarked older posts are no longer skipped.
 - **Sidebar collapse** — collapsible sidebar with localStorage persistence added.
 - **Theme system** — `ThemeProvider` context wired in; dark/light groundwork laid.
 
