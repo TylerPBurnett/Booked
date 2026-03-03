@@ -181,4 +181,17 @@ describe('reorderCategories', () => {
   it('throws if nameOrder contains duplicates', () => {
     expect(() => reorderCategories(meta, ['Dev', 'Dev', 'Design'])).toThrow()
   })
+
+  it('throws if Uncategorized is not placed last', () => {
+    const metaWithUncat = {
+      categories: [
+        { name: 'Design', children: [] },
+        { name: 'Dev', children: [] },
+        { name: 'Uncategorized', children: [] },
+      ],
+    }
+    expect(() =>
+      reorderCategories(metaWithUncat, ['Uncategorized', 'Design', 'Dev'])
+    ).toThrow()
+  })
 })

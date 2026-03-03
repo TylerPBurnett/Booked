@@ -181,8 +181,9 @@ describe('PUT /api/categories/reorder', () => {
   it('reorders categories', async () => {
     const current = await request(app).get('/api/categories')
     const names = current.body.map(c => c.name)
-    // Move first category to end
-    const reordered = [...names.slice(1), names[0]]
+    // Reorder draggable categories (all except Uncategorized which must stay last)
+    const draggable = names.filter(n => n !== 'Uncategorized')
+    const reordered = [...draggable.slice(1), draggable[0], 'Uncategorized']
 
     const res = await request(app)
       .put('/api/categories/reorder')

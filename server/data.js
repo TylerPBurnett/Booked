@@ -181,5 +181,9 @@ export function reorderCategories(meta, nameOrder) {
   for (const name of nameOrder) {
     if (!byName[name]) throw new Error(`Unknown category "${name}"`)
   }
+  const uncatIdx = nameOrder.indexOf('Uncategorized')
+  if (uncatIdx !== -1 && uncatIdx !== nameOrder.length - 1) {
+    throw new Error('Uncategorized must remain last')
+  }
   return { ...meta, categories: nameOrder.map(n => byName[n]) }
 }
