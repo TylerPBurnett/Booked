@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import {
   readMeta, writeMeta, readBookmarks, writeBookmarks,
-  addCategory, removeCategory, renameCategory,
+  addCategory, removeCategory, renameCategory, reorderCategories,
 } from '../data.js'
 
 const router = Router()
@@ -97,6 +97,24 @@ router.delete('/:name', (req, res) => {
 
   writeMeta(meta)
   writeBookmarks(bookmarks)
+  res.json({ ok: true })
+})
+
+// PUT /api/categories/reorder — reorder top-level categories
+router.put('/reorder', (req, res) => {
+  const { order } = req.body
+  if (!Array.isArray(order)) {
+    return res.status(400).json({ error: 'order must be an array of category names' })
+  }
+
+  let meta = readMeta()
+  try {
+    meta = reorderCategories(meta, order)
+  } catch (err) {
+    return res.status(400).json({ error: err.message })
+  }
+
+  writeMeta(meta)
   res.json({ ok: true })
 })
 

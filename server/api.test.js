@@ -176,3 +176,31 @@ describe('DELETE /api/categories/:name', () => {
     expect(res.status).toBe(400)
   })
 })
+
+describe('PUT /api/categories/reorder', () => {
+  it('reorders categories', async () => {
+    // Seed state has: Design, Dev (with Frontend child), Uncategorized
+    const res = await request(app)
+      .put('/api/categories/reorder')
+      .send({ order: ['Dev', 'Design', 'Uncategorized'] })
+    expect(res.status).toBe(200)
+    expect(res.body.ok).toBe(true)
+
+    const check = await request(app).get('/api/categories')
+    expect(check.body[0].name).toBe('Dev')
+  })
+
+  it('returns 400 if order is missing names', async () => {
+    const res = await request(app)
+      .put('/api/categories/reorder')
+      .send({ order: ['Dev'] })
+    expect(res.status).toBe(400)
+  })
+
+  it('returns 400 if an unknown name is supplied', async () => {
+    const res = await request(app)
+      .put('/api/categories/reorder')
+      .send({ order: ['Dev', 'Design', 'Uncategorized', 'Ghost'] })
+    expect(res.status).toBe(400)
+  })
+})
