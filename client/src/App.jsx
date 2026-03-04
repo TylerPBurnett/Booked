@@ -33,6 +33,7 @@ function BookedApp() {
   const handleResize = (w) => setSidebarWidth(w)
 
   const handleResizeEnd = (w) => {
+    setSidebarWidth(w)
     try { localStorage.setItem('booked-sidebar-width', String(w)) } catch {}
   }
 
