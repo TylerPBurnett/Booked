@@ -1,6 +1,51 @@
+import { useRef, useCallback } from 'react'
 import { clsx } from 'clsx'
 
 export function Layout({ sidebar, header, children, collapsed, onToggleSidebar, sidebarWidth, onResize, onResizeEnd, onCollapse, onExpand }) {
+  const isDragging = useRef(false)
+  const dragStartX = useRef(0)
+  const dragStartWidth = useRef(0)
+
+  const handleDragStart = useCallback((e) => {
+    e.preventDefault()
+    isDragging.current = true
+    dragStartX.current = e.clientX
+    dragStartWidth.current = collapsed ? 52 : sidebarWidth
+
+    const onMove = (e) => {
+      if (!isDragging.current) return
+      const delta = e.clientX - dragStartX.current
+      const newWidth = dragStartWidth.current + delta
+
+      if (collapsed) {
+        if (newWidth > 180) {
+          onExpand(Math.min(newWidth, 400))
+        }
+      } else {
+        if (newWidth < 180) {
+          onCollapse()
+          isDragging.current = false
+          window.removeEventListener('mousemove', onMove)
+          window.removeEventListener('mouseup', onUp)
+        } else {
+          onResize(Math.min(newWidth, 400))
+        }
+      }
+    }
+
+    const onUp = () => {
+      if (isDragging.current) {
+        isDragging.current = false
+        onResizeEnd(Math.min(Math.max(sidebarWidth, 180), 400))
+      }
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
+
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+  }, [collapsed, sidebarWidth, onResize, onResizeEnd, onCollapse, onExpand])
+
   return (
     <div className="flex h-screen bg-canvas overflow-hidden">
       {/* Sidebar + toggle button wrapper */}
@@ -11,6 +56,13 @@ export function Layout({ sidebar, header, children, collapsed, onToggleSidebar, 
         >
           {sidebar}
         </aside>
+
+        {/* Resize handle — invisible, sits on the right border */}
+        <div
+          onMouseDown={handleDragStart}
+          className="absolute inset-y-0 right-0 w-1 cursor-ew-resize z-20 hover:bg-brand/20 transition-colors"
+          title="Drag to resize"
+        />
 
         {/* Toggle button — floats on the right border, appears on sidebar hover */}
         <button
