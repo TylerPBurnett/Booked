@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef, useMemo, memo } from 'react'
 import {
   DndContext,
   closestCenter,
@@ -180,7 +180,7 @@ function Tip({ label, collapsed, children }) {
 
 // ── Nav item ───────────────────────────────────────────────────
 
-function NavItem({ label, count, active, onClick, icon, collapsed }) {
+const NavItem = memo(function NavItem({ label, count, active, onClick, icon, collapsed }) {
   return (
     <Tip label={label} collapsed={collapsed}>
       <button
@@ -215,7 +215,7 @@ function NavItem({ label, count, active, onClick, icon, collapsed }) {
       </button>
     </Tip>
   )
-}
+})
 
 // ── Category menu ──────────────────────────────────────────────
 
@@ -698,9 +698,13 @@ function AnimatedCollapse({ open, children }) {
   const ref = useRef(null)
   const [height, setHeight] = useState(0)
 
-  useEffect(() => {
-    if (ref.current) setHeight(ref.current.scrollHeight)
-  })
+  useLayoutEffect(() => {
+    if (!ref.current) return
+    setHeight(ref.current.scrollHeight)
+    const obs = new ResizeObserver(() => setHeight(ref.current?.scrollHeight ?? 0))
+    obs.observe(ref.current)
+    return () => obs.disconnect()
+  }, [])
 
   return (
     <div
@@ -769,13 +773,15 @@ export function Sidebar({
   const toggleExpand = (name) =>
     setExpandedCats(prev => ({ ...prev, [name]: !prev[name] }))
 
-  const tagCounts = bookmarks.reduce((acc, b) => {
+  const tagCounts = useMemo(() => bookmarks.reduce((acc, b) => {
     b.tags?.forEach(t => { acc[t] = (acc[t] || 0) + 1 })
     return acc
-  }, {})
-  const sortedTags = Object.entries(tagCounts).sort(([,a],[,b]) => b-a).slice(0, 20)
+  }, {}), [bookmarks])
+  const sortedTags = useMemo(() =>
+    Object.entries(tagCounts).sort(([,a],[,b]) => b-a).slice(0, 20)
+  , [tagCounts])
 
-  const allCount = bookmarks.filter(b => !b.archived).length
+  const allCount = useMemo(() => bookmarks.filter(b => !b.archived).length, [bookmarks])
 
   return (
     <div className="relative flex flex-col h-full overflow-hidden">
