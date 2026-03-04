@@ -1,7 +1,8 @@
-import { useRef, useCallback } from 'react'
+import { useRef, useCallback, useState } from 'react'
 import { clsx } from 'clsx'
 
 export function Layout({ sidebar, header, children, collapsed, onToggleSidebar, sidebarWidth, onResize, onResizeEnd, onCollapse, onExpand }) {
+  const [dragging, setDragging] = useState(false)
   const isDragging = useRef(false)
   const dragStartX = useRef(0)
   const dragStartWidth = useRef(0)
@@ -9,6 +10,7 @@ export function Layout({ sidebar, header, children, collapsed, onToggleSidebar, 
 
   const handleDragStart = useCallback((e) => {
     e.preventDefault()
+    setDragging(true)
     isDragging.current = true
     dragStartX.current = e.clientX
     dragStartWidth.current = collapsed ? 52 : sidebarWidth
@@ -35,6 +37,7 @@ export function Layout({ sidebar, header, children, collapsed, onToggleSidebar, 
         if (!expandedMidDrag && newWidth < 180) {
           // Collapse — only possible if we started open
           onCollapse()
+          setDragging(false)
           isDragging.current = false
           window.removeEventListener('mousemove', onMove)
           window.removeEventListener('mouseup', onUp)
@@ -48,6 +51,7 @@ export function Layout({ sidebar, header, children, collapsed, onToggleSidebar, 
 
     const onUp = () => {
       if (isDragging.current) {
+        setDragging(false)
         isDragging.current = false
         onResizeEnd(lastWidth.current)
       }
@@ -64,7 +68,10 @@ export function Layout({ sidebar, header, children, collapsed, onToggleSidebar, 
       {/* Sidebar + toggle button wrapper */}
       <div className="relative flex-none group/sidebar h-screen">
         <aside
-          className="h-full border-r border-wire bg-lift flex flex-col transition-[width] duration-200 ease-in-out overflow-hidden"
+          className={clsx(
+            'h-full border-r border-wire bg-lift flex flex-col overflow-hidden',
+            !dragging && 'transition-[width] duration-200 ease-in-out'
+          )}
           style={{ width: collapsed ? 52 : sidebarWidth }}
         >
           {sidebar}
