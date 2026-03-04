@@ -333,6 +333,42 @@ function CategoryMenu({ onRename, onAddSub, onChangeIcon, onChangeColor, onDelet
   )
 }
 
+// ── Emoji picker ──────────────────────────────────────────────
+
+const CATEGORY_EMOJIS = [
+  '📁', '📂', '⭐', '❤️', '🔥', '💡', '🎯', '🚀',
+  '💻', '🎨', '📝', '📚', '🔧', '🎵', '📷', '🌍',
+  '💰', '🏠', '🎮', '📱', '🔒', '✅', '📌', '💬',
+  '🧪', '📊', '🗂️', '💼', '🎁', '🔗', '📖', '✨',
+]
+
+function EmojiPicker({ onSelect, onClose }) {
+  const ref = useRef(null)
+  useEffect(() => {
+    const handler = (e) => { if (!ref.current?.contains(e.target)) onClose() }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [onClose])
+
+  return (
+    <div ref={ref} className="absolute right-0 top-full mt-1 z-50 bg-lift border border-wire rounded-xl shadow-xl p-2 w-[220px]">
+      <div className="grid grid-cols-8 gap-1">
+        {CATEGORY_EMOJIS.map(emoji => (
+          <button key={emoji} onClick={() => onSelect(emoji)}
+            className="w-6 h-6 flex items-center justify-center rounded hover:bg-float text-sm"
+          >
+            {emoji}
+          </button>
+        ))}
+      </div>
+      <button onClick={() => onSelect(null)}
+        className="w-full mt-1.5 text-xs text-ink-low hover:text-ink-mid py-1 rounded hover:bg-float transition-colors">
+        Reset to default
+      </button>
+    </div>
+  )
+}
+
 // ── Category row ───────────────────────────────────────────────
 
 function CategoryRow({
@@ -342,6 +378,8 @@ function CategoryRow({
   onAddSub = null,
   onChangeIcon = null,
   onChangeColor = null,
+  onUpdateCategory = null,
+  icon = null,
   collapsed: sidebarCollapsed,
   dragHandleListeners = null,
   dragHandleAttributes = {},
@@ -350,6 +388,7 @@ function CategoryRow({
   const [editVal, setEditVal] = useState(name)
   const [confirming, setConfirming] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [emojiPickerOpen, setEmojiPickerOpen] = useState(false)
   const inputRef = useRef(null)
 
   useEffect(() => {
@@ -375,7 +414,10 @@ function CategoryRow({
             active ? 'bg-brand-wash text-brand' : 'text-ink-mid hover:text-ink hover:bg-float'
           )}
         >
-          {getCategoryIcon(name)}
+          {icon
+            ? <span className="w-4 h-4 flex items-center justify-center text-sm">{icon}</span>
+            : getCategoryIcon(name)
+          }
         </button>
       </Tip>
     )
@@ -436,7 +478,7 @@ function CategoryRow({
             )}
           >
             {depth === 0
-              ? <span className="shrink-0">{getCategoryIcon(name)}</span>
+              ? <span className="shrink-0">{icon ? <span className="w-4 h-4 flex items-center justify-center text-sm">{icon}</span> : getCategoryIcon(name)}</span>
               : <svg className="w-3.5 h-3.5 shrink-0 flex-none opacity-60" viewBox="0 0 14 14" fill="none">
                   <path d="M1.5 4.5C1.5 3.67 2.17 3 3 3h2.38l1.24 1.5H11c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5H3c-.83 0-1.5-.67-1.5-1.5v-6z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
                 </svg>
@@ -477,10 +519,16 @@ function CategoryRow({
                     depth={depth}
                     onRename={() => { setEditVal(name); setEditing(true) }}
                     onAddSub={depth === 0 ? onAddSub : null}
-                    onChangeIcon={onChangeIcon || (() => {})}
+                    onChangeIcon={() => setEmojiPickerOpen(true)}
                     onChangeColor={onChangeColor || (() => {})}
                     onDelete={() => setConfirming(true)}
                     onClose={() => setMenuOpen(false)}
+                  />
+                )}
+                {emojiPickerOpen && (
+                  <EmojiPicker
+                    onSelect={(emoji) => { if (onUpdateCategory) onUpdateCategory(name, { icon: emoji }); setEmojiPickerOpen(false) }}
+                    onClose={() => setEmojiPickerOpen(false)}
                   />
                 )}
               </>
@@ -592,6 +640,7 @@ export function Sidebar({
   onRenameCategory,
   onDeleteCategory,
   onReorderCategories,
+  onUpdateCategory,
 }) {
   const [expandedCats, setExpandedCats] = useState({})
   const [addingTop, setAddingTop] = useState(false)
@@ -687,8 +736,9 @@ export function Sidebar({
                     onRename={(newName) => onRenameCategory(cat.name, newName)}
                     onDelete={() => onDeleteCategory(cat.name)}
                     onAddSub={() => setAddingSub(cat.name)}
-                    onChangeIcon={() => {}}
                     onChangeColor={() => {}}
+                    onUpdateCategory={onUpdateCategory}
+                    icon={cat.icon ?? null}
                     collapsed={false}
                   />
                   {expandedCats[cat.name] && (
@@ -708,8 +758,9 @@ export function Sidebar({
                           onRename={(newName) => onRenameCategory(sub.name, newName, cat.name)}
                           onDelete={() => onDeleteCategory(sub.name, cat.name)}
                           onAddSub={null}
-                          onChangeIcon={() => {}}
                           onChangeColor={() => {}}
+                          onUpdateCategory={onUpdateCategory}
+                          icon={sub.icon ?? null}
                           collapsed={false}
                         />
                       ))}
@@ -751,6 +802,7 @@ export function Sidebar({
                     onAdd={null}
                     onRename={null}
                     onDelete={null}
+                    icon={activeCategory.icon ?? null}
                     collapsed={false}
                   />
                 </div>
@@ -773,6 +825,7 @@ export function Sidebar({
                 onAdd={null}
                 onRename={null}
                 onDelete={null}
+                icon={cat.icon ?? null}
                 collapsed={true}
               />
             ))}

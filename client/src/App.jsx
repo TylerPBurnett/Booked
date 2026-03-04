@@ -13,7 +13,7 @@ import { BookmarkDetail } from './components/BookmarkDetail.jsx'
 function BookedApp() {
   const { bookmarks, meta, loading, syncing, sync, updateBookmark } = useBookmarks()
   const filters = useFilters(bookmarks)
-  const { categories, createCategory, renameCategory: renameCat, deleteCategory, reorderCategories } = useCategories()
+  const { categories, createCategory, renameCategory: renameCat, deleteCategory, reorderCategories, updateCategory } = useCategories()
   const { query, setQuery, results } = useFuzzySearch(filters.filtered)
   const [selectedId, setSelectedId] = useState(null)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -69,6 +69,7 @@ function BookedApp() {
             onRenameCategory={renameCat}
             onDeleteCategory={deleteCategory}
             onReorderCategories={reorderCategories}
+            onUpdateCategory={updateCategory}
           />
         }
         header={
