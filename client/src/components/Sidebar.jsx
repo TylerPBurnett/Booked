@@ -147,7 +147,7 @@ function NavItem({ label, count, active, onClick, icon, collapsed }) {
 
 // ── Category menu ──────────────────────────────────────────────
 
-function CategoryMenu({ onRename, onAddSub, onChangeIcon, onChangeColor, onDelete, onClose, depth }) {
+function CategoryMenu({ onRename, onAddSub, onChangeIcon, onChangeColor, onDelete, onClose, depth, anchorRect }) {
   const ref = useRef(null)
 
   useEffect(() => {
@@ -156,10 +156,19 @@ function CategoryMenu({ onRename, onAddSub, onChangeIcon, onChangeColor, onDelet
     return () => document.removeEventListener('mousedown', handler)
   }, [onClose])
 
+  // Position below the anchor button, right-aligned
+  const style = anchorRect ? {
+    position: 'fixed',
+    top: anchorRect.bottom + 4,
+    left: Math.min(anchorRect.right, window.innerWidth - 170),
+    transform: 'translateX(-100%)',
+  } : {}
+
   return (
     <div
       ref={ref}
-      className="absolute right-0 top-full mt-1 z-50 bg-lift border border-wire rounded-xl shadow-xl py-1 min-w-[160px]"
+      className="z-[100] bg-lift border border-wire rounded-xl shadow-xl py-1 min-w-[160px]"
+      style={style}
       onClick={e => e.stopPropagation()}
     >
       <button
@@ -234,7 +243,7 @@ const CATEGORY_EMOJIS = [
   '🧪', '📊', '🗂️', '💼', '🎁', '🔗', '📖', '✨',
 ]
 
-function EmojiPicker({ onSelect, onClose }) {
+function EmojiPicker({ onSelect, onClose, anchorRect }) {
   const ref = useRef(null)
   useEffect(() => {
     const handler = (e) => { if (!ref.current?.contains(e.target)) onClose() }
@@ -242,8 +251,15 @@ function EmojiPicker({ onSelect, onClose }) {
     return () => document.removeEventListener('mousedown', handler)
   }, [onClose])
 
+  const style = anchorRect ? {
+    position: 'fixed',
+    top: anchorRect.bottom + 4,
+    left: Math.min(anchorRect.right, window.innerWidth - 230),
+    transform: 'translateX(-100%)',
+  } : {}
+
   return (
-    <div ref={ref} className="absolute right-0 top-full mt-1 z-50 bg-lift border border-wire rounded-xl shadow-xl p-2 w-[220px]">
+    <div ref={ref} className="z-[100] bg-lift border border-wire rounded-xl shadow-xl p-2 w-[220px]" style={style}>
       <div className="grid grid-cols-8 gap-1">
         {CATEGORY_EMOJIS.map(emoji => (
           <button key={emoji} onClick={() => onSelect(emoji)}
@@ -269,7 +285,7 @@ const CATEGORY_COLORS = [
   '#6b7280', '#a3a3a3',
 ]
 
-function ColorPicker({ onSelect, currentColor, onClose }) {
+function ColorPicker({ onSelect, currentColor, onClose, anchorRect }) {
   const ref = useRef(null)
   useEffect(() => {
     const handler = (e) => { if (!ref.current?.contains(e.target)) onClose() }
@@ -277,8 +293,15 @@ function ColorPicker({ onSelect, currentColor, onClose }) {
     return () => document.removeEventListener('mousedown', handler)
   }, [onClose])
 
+  const style = anchorRect ? {
+    position: 'fixed',
+    top: anchorRect.bottom + 4,
+    left: Math.min(anchorRect.right, window.innerWidth - 180),
+    transform: 'translateX(-100%)',
+  } : {}
+
   return (
-    <div ref={ref} className="absolute right-0 top-full mt-1 z-50 bg-lift border border-wire rounded-xl shadow-xl p-2">
+    <div ref={ref} className="z-[100] bg-lift border border-wire rounded-xl shadow-xl p-2" style={style}>
       <div className="flex gap-1.5 flex-wrap">
         {CATEGORY_COLORS.map(color => (
           <button key={color} onClick={() => onSelect(color)}
@@ -317,7 +340,9 @@ function CategoryRow({
   const [menuOpen, setMenuOpen] = useState(false)
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false)
   const [colorPickerOpen, setColorPickerOpen] = useState(false)
+  const [anchorRect, setAnchorRect] = useState(null)
   const inputRef = useRef(null)
+  const dotBtnRef = useRef(null)
 
   useEffect(() => {
     if (editing) inputRef.current?.focus()
@@ -373,7 +398,7 @@ function CategoryRow({
           />
         </div>
       ) : (
-        <div className="flex items-center rounded-lg overflow-hidden">
+        <div className="flex items-center rounded-lg">
           {depth === 0 && (hasChildren ? (
             <button
               onClick={onToggleExpand}
@@ -446,7 +471,13 @@ function CategoryRow({
                   {count}
                 </span>
                 <button
-                  onClick={(e) => { e.stopPropagation(); setMenuOpen(o => !o) }}
+                  ref={dotBtnRef}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    const rect = dotBtnRef.current?.getBoundingClientRect()
+                    if (rect) setAnchorRect(rect)
+                    setMenuOpen(o => !o)
+                  }}
                   className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition-opacity duration-100 text-ink-low hover:text-ink"
                 >
                   <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
@@ -458,6 +489,7 @@ function CategoryRow({
                 {menuOpen && (
                   <CategoryMenu
                     depth={depth}
+                    anchorRect={anchorRect}
                     onRename={() => { setEditVal(name); setEditing(true) }}
                     onAddSub={depth === 0 ? onAddSub : null}
                     onChangeIcon={() => setEmojiPickerOpen(true)}
@@ -468,12 +500,14 @@ function CategoryRow({
                 )}
                 {emojiPickerOpen && (
                   <EmojiPicker
+                    anchorRect={anchorRect}
                     onSelect={(emoji) => { if (onUpdateCategory) onUpdateCategory(name, { icon: emoji }); setEmojiPickerOpen(false) }}
                     onClose={() => setEmojiPickerOpen(false)}
                   />
                 )}
                 {colorPickerOpen && (
                   <ColorPicker
+                    anchorRect={anchorRect}
                     currentColor={color}
                     onSelect={(c) => { if (onUpdateCategory) onUpdateCategory(name, { color: c }); setColorPickerOpen(false) }}
                     onClose={() => setColorPickerOpen(false)}
