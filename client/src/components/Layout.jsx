@@ -1,7 +1,12 @@
 import { useRef, useCallback, useState } from 'react'
 import { clsx } from 'clsx'
 
-export function Layout({ sidebar, header, children, collapsed, onToggleSidebar, sidebarWidth, onResize, onResizeEnd, onCollapse, onExpand }) {
+const COLLAPSED_WIDTH = 52
+const MIN_WIDTH = 180
+const MAX_WIDTH = 400
+
+export function Layout({ sidebar, header, children, sidebarWidth, onToggleSidebar, onResize, onResizeEnd }) {
+  const isCollapsed = sidebarWidth === COLLAPSED_WIDTH
   const [dragging, setDragging] = useState(false)
   const isDragging = useRef(false)
   const dragStartX = useRef(0)
@@ -13,52 +18,23 @@ export function Layout({ sidebar, header, children, collapsed, onToggleSidebar, 
     setDragging(true)
     isDragging.current = true
     dragStartX.current = e.clientX
-    dragStartWidth.current = collapsed ? 52 : sidebarWidth
-    lastWidth.current = collapsed ? 52 : sidebarWidth
-
-    // Track open/collapsed transitions mid-drag so listeners stay alive through snaps
-    let expandedMidDrag = false
-    let collapsedMidDrag = false
+    dragStartWidth.current = sidebarWidth
+    lastWidth.current = sidebarWidth
 
     const onMove = (e) => {
       if (!isDragging.current) return
-      const delta = e.clientX - dragStartX.current
-      const newWidth = dragStartWidth.current + delta
-
-      // Are we currently in a collapsed state (either started that way or snapped mid-drag)?
-      const effectivelyCollapsed = (collapsed && !expandedMidDrag) || collapsedMidDrag
-
-      if (effectivelyCollapsed) {
-        // Drag right past threshold → expand
-        if (newWidth > 180) {
-          collapsedMidDrag = false
-          expandedMidDrag = true
-          const w = Math.min(newWidth, 400)
-          lastWidth.current = w
-          onExpand(w)
-        }
-      } else {
-        if (newWidth < 180) {
-          // Drag left past threshold → collapse, but keep drag alive so user can reverse
-          collapsedMidDrag = true
-          expandedMidDrag = false  // reset so next rightward drag re-triggers onExpand
-          onCollapse()
-        } else {
-          const w = Math.min(Math.max(newWidth, 180), 400)
-          lastWidth.current = w
-          onResize(w)
-        }
-      }
+      const raw = dragStartWidth.current + (e.clientX - dragStartX.current)
+      // Drag clamps between MIN_WIDTH and MAX_WIDTH — never touches ribbon
+      const w = Math.min(Math.max(raw, MIN_WIDTH), MAX_WIDTH)
+      lastWidth.current = w
+      onResize(w)
     }
 
     const onUp = () => {
       if (isDragging.current) {
         setDragging(false)
         isDragging.current = false
-        // Only persist width if we ended in an open state
-        if (!collapsedMidDrag) {
-          onResizeEnd(lastWidth.current)
-        }
+        onResizeEnd(lastWidth.current)
       }
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('mouseup', onUp)
@@ -66,39 +42,41 @@ export function Layout({ sidebar, header, children, collapsed, onToggleSidebar, 
 
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mouseup', onUp)
-  }, [collapsed, sidebarWidth, onResize, onResizeEnd, onCollapse, onExpand])
+  }, [sidebarWidth, onResize, onResizeEnd])
 
   return (
     <div className="flex h-screen bg-canvas overflow-hidden">
       {/* Sidebar + toggle button wrapper */}
-      <div className="relative flex-none group/sidebar h-screen">
+      <div className="relative flex-none h-screen">
         <aside
           className={clsx(
             'h-full border-r border-wire bg-lift flex flex-col overflow-hidden',
             !dragging && 'transition-[width] duration-200 ease-in-out'
           )}
-          style={{ width: collapsed ? 52 : sidebarWidth }}
+          style={{ width: sidebarWidth }}
         >
           {sidebar}
         </aside>
 
-        {/* Resize handle — invisible, sits on the right border */}
-        <div
-          onMouseDown={handleDragStart}
-          className="absolute inset-y-0 right-0 w-1 cursor-ew-resize z-20 hover:bg-brand/20 transition-colors"
-          title="Drag to resize"
-        />
+        {/* Resize handle — invisible drag zone on the right border, only active when not collapsed */}
+        {!isCollapsed && (
+          <div
+            onMouseDown={handleDragStart}
+            className="absolute inset-y-0 right-0 w-1 cursor-ew-resize z-20 hover:bg-brand/20 transition-colors"
+            title="Drag to resize"
+          />
+        )}
 
-        {/* Toggle button — floats on the right border, appears on sidebar hover */}
+        {/* Toggle button — always visible but discrete */}
         <button
           onClick={onToggleSidebar}
-          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           className="absolute top-[22px] right-0 translate-x-1/2 z-30 w-5 h-5 rounded-full bg-lift border border-wire flex items-center justify-center text-ink-low hover:text-ink hover:bg-float shadow-sm transition-all opacity-30 hover:opacity-100"
         >
           <svg
             className={clsx(
               'w-2.5 h-2.5 transition-transform duration-200',
-              collapsed ? 'rotate-180' : ''
+              isCollapsed ? 'rotate-180' : ''
             )}
             viewBox="0 0 10 10" fill="none"
           >

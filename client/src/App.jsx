@@ -16,37 +16,33 @@ function BookedApp() {
   const { categories, createCategory, renameCategory: renameCat, deleteCategory, reorderCategories, reorderSubcategories, updateCategory } = useCategories()
   const { query, setQuery, results } = useFuzzySearch(filters.filtered)
   const [selectedId, setSelectedId] = useState(null)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    try { return localStorage.getItem('booked-sidebar-collapsed') === 'true' } catch { return false }
-  })
 
-  const toggleSidebar = () => setSidebarCollapsed(prev => {
-    const next = !prev
-    try { localStorage.setItem('booked-sidebar-collapsed', String(next)) } catch {}
-    return next
-  })
+  const COLLAPSED_WIDTH = 52
+  const DEFAULT_WIDTH = 240
 
   const [sidebarWidth, setSidebarWidth] = useState(() => {
-    try { return Number(localStorage.getItem('booked-sidebar-width')) || 240 } catch { return 240 }
+    try { return Number(localStorage.getItem('booked-sidebar-width')) || DEFAULT_WIDTH } catch { return DEFAULT_WIDTH }
   })
 
-  const handleCollapse = () => {
-    setSidebarCollapsed(true)
-    try { localStorage.setItem('booked-sidebar-collapsed', 'true') } catch {}
+  // Remember last open width so toggle can restore it
+  const lastOpenWidth = useRef(sidebarWidth === COLLAPSED_WIDTH ? DEFAULT_WIDTH : sidebarWidth)
+
+  const isCollapsed = sidebarWidth === COLLAPSED_WIDTH
+
+  const toggleSidebar = () => {
+    if (isCollapsed) {
+      const w = lastOpenWidth.current
+      setSidebarWidth(w)
+      try { localStorage.setItem('booked-sidebar-width', String(w)) } catch {}
+    } else {
+      lastOpenWidth.current = sidebarWidth
+      setSidebarWidth(COLLAPSED_WIDTH)
+      try { localStorage.setItem('booked-sidebar-width', String(COLLAPSED_WIDTH)) } catch {}
+    }
   }
 
   const handleResizeEnd = (w) => {
-    setSidebarWidth(w)
     try { localStorage.setItem('booked-sidebar-width', String(w)) } catch {}
-  }
-
-  const handleExpand = (w) => {
-    setSidebarCollapsed(false)
-    setSidebarWidth(w)
-    try {
-      localStorage.setItem('booked-sidebar-collapsed', 'false')
-      localStorage.setItem('booked-sidebar-width', String(w))
-    } catch {}
   }
 
   const handleCardClick = useCallback((id) => setSelectedId(id), [])
@@ -72,13 +68,10 @@ function BookedApp() {
   return (
     <>
       <Layout
-        collapsed={sidebarCollapsed}
-        onToggleSidebar={toggleSidebar}
         sidebarWidth={sidebarWidth}
+        onToggleSidebar={toggleSidebar}
         onResize={setSidebarWidth}
         onResizeEnd={handleResizeEnd}
-        onCollapse={handleCollapse}
-        onExpand={handleExpand}
         sidebar={
           <Sidebar
             bookmarks={bookmarks}
@@ -89,7 +82,7 @@ function BookedApp() {
             setSelectedTags={filters.setSelectedTags}
             syncing={syncing}
             onSync={sync}
-            collapsed={sidebarCollapsed}
+            collapsed={isCollapsed}
             categories={categories}
             subcategory={filters.subcategory}
             setSubcategory={filters.setSubcategory}
