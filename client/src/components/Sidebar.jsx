@@ -684,6 +684,26 @@ function SortableCategoryRow({ id, ...props }) {
   )
 }
 
+// ── Animated collapse ──────────────────────────────────────────
+
+function AnimatedCollapse({ open, children }) {
+  const ref = useRef(null)
+  const [height, setHeight] = useState(0)
+
+  useEffect(() => {
+    if (ref.current) setHeight(ref.current.scrollHeight)
+  })
+
+  return (
+    <div
+      style={{ maxHeight: open ? height : 0 }}
+      className="overflow-hidden transition-[max-height] duration-150 ease-out"
+    >
+      <div ref={ref}>{children}</div>
+    </div>
+  )
+}
+
 // ── Sidebar ────────────────────────────────────────────────────
 
 export function Sidebar({
@@ -812,7 +832,7 @@ export function Sidebar({
                     color={cat.color ?? null}
                     collapsed={false}
                   />
-                  {expandedCats[cat.name] && (
+                  <AnimatedCollapse open={!!expandedCats[cat.name]}>
                     <div className="ml-[22px] pl-3 border-l border-wire-dim space-y-0.5 pt-0.5 pb-1">
                       {cat.children.map(sub => (
                         <CategoryRow
@@ -853,7 +873,7 @@ export function Sidebar({
                         </button>
                       )}
                     </div>
-                  )}
+                  </AnimatedCollapse>
                 </div>
               ))}
             </SortableContext>
