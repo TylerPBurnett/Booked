@@ -17,7 +17,6 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { clsx } from 'clsx'
-import { useTheme, THEMES } from '../context/ThemeContext.jsx'
 
 // ── Category icons ─────────────────────────────────────────────
 
@@ -143,113 +142,6 @@ function NavItem({ label, count, active, onClick, icon, collapsed }) {
         )}
       </button>
     </Tip>
-  )
-}
-
-// ── Theme picker ───────────────────────────────────────────────
-
-function ThemePicker({ collapsed }) {
-  const { theme, setTheme } = useTheme()
-  const [open, setOpen] = useState(false)
-
-  const groups = THEMES.reduce((acc, t) => {
-    if (!acc[t.group]) acc[t.group] = []
-    acc[t.group].push(t)
-    return acc
-  }, {})
-
-  const current = THEMES.find(t => t.id === theme)
-
-  if (collapsed) {
-    return (
-      <Tip label={`Theme: ${current?.label}`} collapsed>
-        <button
-          onClick={() => setOpen(o => !o)}
-          className="w-full flex justify-center p-2.5 rounded-lg text-ink-mid hover:bg-float transition-colors"
-        >
-          <span className="relative w-4 h-4 rounded-full border border-wire/60 shrink-0 overflow-hidden">
-            <span className="absolute inset-0" style={{ background: current?.bg }} />
-            <span className="absolute bottom-0 right-0 w-2 h-2" style={{ background: current?.accent }} />
-          </span>
-        </button>
-        {open && (
-          <div className="absolute left-full bottom-0 ml-3 z-50 p-3 bg-lift border border-wire rounded-xl shadow-xl min-w-[220px]">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-low mb-3">Theme</p>
-            {Object.entries(groups).map(([group, groupThemes]) => (
-              <div key={group} className="mb-3 last:mb-0">
-                <p className="text-[9px] font-semibold uppercase tracking-widest text-ink-low mb-1.5">{group}</p>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {groupThemes.map(t => (
-                    <button
-                      key={t.id}
-                      onClick={() => { setTheme(t.id); setOpen(false) }}
-                      title={t.label}
-                      className={clsx(
-                        'relative h-7 rounded-md overflow-hidden border transition-all',
-                        theme === t.id
-                          ? 'border-brand ring-1 ring-[var(--accent)] ring-offset-1 ring-offset-[var(--bg-elevated)]'
-                          : 'border-wire hover:border-ink-mid'
-                      )}
-                      style={{ background: t.bg }}
-                    >
-                      <span className="absolute bottom-0 right-0 w-3 h-3 rounded-tl-md" style={{ background: t.accent }} />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Tip>
-    )
-  }
-
-  return (
-    <div className="px-3 pb-1">
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between py-1.5 group"
-      >
-        <span className="text-[10px] font-semibold uppercase tracking-widest text-ink-low group-hover:text-ink-mid transition-colors">
-          Appearance
-        </span>
-        <span className="flex items-center gap-1.5 text-xs text-ink-mid">
-          <span className="w-3 h-3 rounded-full border border-wire/60 shrink-0" style={{ background: current?.bg }} />
-          <span className="text-[11px]">{current?.label}</span>
-          <svg className={clsx('w-3 h-3 transition-transform text-ink-low', open && 'rotate-180')} viewBox="0 0 10 6" fill="none">
-            <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </span>
-      </button>
-
-      {open && (
-        <div className="mt-2 pb-1 space-y-3">
-          {Object.entries(groups).map(([group, groupThemes]) => (
-            <div key={group}>
-              <p className="text-[9px] font-semibold uppercase tracking-widest text-ink-low mb-1.5 px-0.5">{group}</p>
-              <div className="grid grid-cols-4 gap-1.5">
-                {groupThemes.map(t => (
-                  <button
-                    key={t.id}
-                    onClick={() => { setTheme(t.id); setOpen(false) }}
-                    title={t.label}
-                    className={clsx(
-                      'relative h-7 rounded-md overflow-hidden border transition-all',
-                      theme === t.id
-                        ? 'border-brand ring-1 ring-[var(--accent)] ring-offset-1 ring-offset-[var(--bg-elevated)]'
-                        : 'border-wire hover:border-ink-mid'
-                    )}
-                    style={{ background: t.bg }}
-                  >
-                    <span className="absolute bottom-0 right-0 w-3 h-3 rounded-tl-md" style={{ background: t.accent }} />
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
   )
 }
 
@@ -984,8 +876,7 @@ export function Sidebar({
       </div>
 
       {/* Footer */}
-      <div className={clsx('shrink-0 border-t border-wire-dim pt-3 space-y-1', collapsed ? 'px-2' : '')}>
-        <ThemePicker collapsed={collapsed} />
+      <div className={clsx('shrink-0 border-t border-wire-dim pt-3', collapsed ? 'px-2' : '')}>
         <div className={clsx('pb-4', collapsed ? 'px-0' : 'px-3')}>
           <Tip label={syncing ? 'Syncing…' : 'Sync bookmarks'} collapsed={collapsed}>
             <button
