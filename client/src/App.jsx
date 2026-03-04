@@ -26,6 +26,25 @@ function BookedApp() {
     return next
   })
 
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    try { return Number(localStorage.getItem('booked-sidebar-width')) || 240 } catch { return 240 }
+  })
+
+  const handleResize = (w) => setSidebarWidth(w)
+
+  const handleResizeEnd = (w) => {
+    try { localStorage.setItem('booked-sidebar-width', String(w)) } catch {}
+  }
+
+  const handleExpand = (w) => {
+    setSidebarCollapsed(false)
+    setSidebarWidth(w)
+    try {
+      localStorage.setItem('booked-sidebar-collapsed', 'false')
+      localStorage.setItem('booked-sidebar-width', String(w))
+    } catch {}
+  }
+
   const handleCardClick = useCallback((id) => setSelectedId(id), [])
 
   const selectedBookmark = bookmarks.find(b => b.id === selectedId) || null
@@ -51,6 +70,11 @@ function BookedApp() {
       <Layout
         collapsed={sidebarCollapsed}
         onToggleSidebar={toggleSidebar}
+        sidebarWidth={sidebarWidth}
+        onResize={handleResize}
+        onResizeEnd={handleResizeEnd}
+        onCollapse={toggleSidebar}
+        onExpand={handleExpand}
         sidebar={
           <Sidebar
             bookmarks={bookmarks}
