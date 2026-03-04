@@ -259,6 +259,7 @@ function CategoryRow({
   name, count, active, depth, expanded, hasChildren,
   onClick, onToggleExpand,
   onAdd, onRename, onDelete,
+  onCtxMenu = null,
   collapsed: sidebarCollapsed,
   dragHandleListeners = null,
   dragHandleAttributes = {},
@@ -280,6 +281,16 @@ function CategoryRow({
 
   const isProtected = name === 'Uncategorized' || name === 'All'
 
+  const handleContextMenu = (e) => {
+    if (!onCtxMenu || isProtected) return
+    e.preventDefault()
+    e.stopPropagation()
+    onCtxMenu(e.clientX, e.clientY, {
+      startEdit: () => { setEditVal(name); setEditing(true) },
+      startDelete: () => setConfirming(true),
+    })
+  }
+
   if (sidebarCollapsed) {
     if (depth > 0) return null
     return (
@@ -298,7 +309,7 @@ function CategoryRow({
   }
 
   return (
-    <div className="group/row relative">
+    <div className="group/row relative" onContextMenu={handleContextMenu}>
       {editing ? (
         <div className="flex items-center px-2 py-1">
           <input
@@ -346,7 +357,7 @@ function CategoryRow({
           <button
             onClick={onClick}
             className={clsx(
-              'flex-1 flex items-center gap-2 py-1.5 pr-1 text-sm transition-colors text-left min-w-0',
+              'flex-1 flex items-center gap-2 py-1.5 pr-2 text-sm transition-colors text-left min-w-0',
               depth === 1 && 'pl-1',
               active ? 'text-brand font-semibold' : 'text-ink-mid hover:text-ink'
             )}
@@ -362,29 +373,6 @@ function CategoryRow({
               {count}
             </span>
           </button>
-
-          {!isProtected && (
-            <div className="flex items-center gap-0.5 opacity-0 group-hover/row:opacity-100 transition-opacity shrink-0 pr-1">
-              <button
-                onClick={() => { setEditVal(name); setEditing(true) }}
-                title="Rename"
-                className="w-5 h-5 flex items-center justify-center rounded text-ink-low hover:text-ink hover:bg-float transition-colors"
-              >
-                <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
-                  <path d="M2 10l2-1 5-5-1-1-5 5-1 2z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
-                </svg>
-              </button>
-              <button
-                onClick={() => setConfirming(true)}
-                title="Delete"
-                className="w-5 h-5 flex items-center justify-center rounded text-ink-low hover:text-red-400 hover:bg-float transition-colors"
-              >
-                <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
-                  <path d="M2 3h8M5 3V2h2v1M4 3l.5 7h3L8 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
-            </div>
-          )}
         </div>
       )}
 
@@ -496,6 +484,18 @@ export function Sidebar({
   const [addingTop, setAddingTop] = useState(false)
   const [addingSub, setAddingSub] = useState(null)
   const [activeId, setActiveId] = useState(null)
+  const [ctxMenu, setCtxMenu] = useState(null) // { x, y, startEdit, startDelete }
+
+  useEffect(() => {
+    if (!ctxMenu) return
+    const close = () => setCtxMenu(null)
+    const onKey = (e) => { if (e.key === 'Escape') close() }
+    window.addEventListener('click', close)
+    window.addEventListener('keydown', onKey)
+    return () => { window.removeEventListener('click', close); window.removeEventListener('keydown', onKey) }
+  }, [ctxMenu])
+
+  const handleCtxMenu = (x, y, fns) => setCtxMenu({ x, y, ...fns })
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -585,6 +585,7 @@ export function Sidebar({
                     onAdd={null}
                     onRename={(newName) => onRenameCategory(cat.name, newName)}
                     onDelete={() => onDeleteCategory(cat.name)}
+                    onCtxMenu={handleCtxMenu}
                     collapsed={false}
                   />
                   {expandedCats[cat.name] && (
@@ -603,6 +604,7 @@ export function Sidebar({
                           onAdd={null}
                           onRename={(newName) => onRenameCategory(sub.name, newName, cat.name)}
                           onDelete={() => onDeleteCategory(sub.name, cat.name)}
+                          onCtxMenu={handleCtxMenu}
                           collapsed={false}
                         />
                       ))}
@@ -741,6 +743,36 @@ export function Sidebar({
           </>
         )}
       </div>
+
+      {/* Context menu */}
+      {ctxMenu && (
+        <div
+          className="fixed z-50 bg-lift border border-wire rounded-xl shadow-xl py-1 min-w-[144px]"
+          style={{ left: ctxMenu.x, top: ctxMenu.y }}
+          onClick={e => e.stopPropagation()}
+        >
+          <button
+            onClick={() => { ctxMenu.startEdit(); setCtxMenu(null) }}
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-ink-mid hover:text-ink hover:bg-float transition-colors text-left"
+          >
+            <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 12 12" fill="none">
+              <path d="M2 10l2-1 5-5-1-1-5 5-1 2z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
+              <path d="M8 2l2 2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+            </svg>
+            Rename
+          </button>
+          <div className="border-t border-wire-dim mx-2 my-0.5" />
+          <button
+            onClick={() => { ctxMenu.startDelete(); setCtxMenu(null) }}
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors text-left"
+          >
+            <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 12 12" fill="none">
+              <path d="M2 3h8M5 3V2h2v1M4 3l.5 7h3L8 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Delete
+          </button>
+        </div>
+      )}
 
       {/* Footer */}
       <div className={clsx('shrink-0 border-t border-wire-dim pt-3 space-y-1', collapsed ? 'px-2' : '')}>
