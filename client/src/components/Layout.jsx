@@ -1,15 +1,13 @@
 import { clsx } from 'clsx'
 
-export function Layout({ sidebar, header, children, collapsed, onToggleSidebar }) {
+export function Layout({ sidebar, header, children, collapsed, onToggleSidebar, sidebarWidth, onResize, onResizeEnd, onCollapse, onExpand }) {
   return (
     <div className="flex h-screen bg-canvas overflow-hidden">
       {/* Sidebar + toggle button wrapper */}
       <div className="relative flex-none group/sidebar h-screen">
         <aside
-          className={clsx(
-            'h-full border-r border-wire bg-lift flex flex-col transition-[width] duration-200 ease-in-out overflow-hidden',
-            collapsed ? 'w-[52px]' : 'w-60'
-          )}
+          className="h-full border-r border-wire bg-lift flex flex-col transition-[width] duration-200 ease-in-out overflow-hidden"
+          style={{ width: collapsed ? 52 : sidebarWidth }}
         >
           {sidebar}
         </aside>
@@ -18,7 +16,7 @@ export function Layout({ sidebar, header, children, collapsed, onToggleSidebar }
         <button
           onClick={onToggleSidebar}
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className="absolute top-[22px] right-0 translate-x-1/2 z-30 w-5 h-5 rounded-full bg-lift border border-wire flex items-center justify-center text-ink-low hover:text-ink hover:bg-float shadow-sm transition-all opacity-0 group-hover/sidebar:opacity-100"
+          className="absolute top-[22px] right-0 translate-x-1/2 z-30 w-5 h-5 rounded-full bg-lift border border-wire flex items-center justify-center text-ink-low hover:text-ink hover:bg-float shadow-sm transition-all opacity-30 hover:opacity-100"
         >
           <svg
             className={clsx(
