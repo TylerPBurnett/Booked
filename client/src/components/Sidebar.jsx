@@ -412,27 +412,15 @@ function CategoryRow({
             <span className="w-5 shrink-0" />
           ))}
 
-          {depth === 0 && !isProtected && dragHandleListeners && (
-            <button
-              {...dragHandleListeners}
-              {...dragHandleAttributes}
-              className="cursor-grab active:cursor-grabbing p-1 shrink-0 text-ink-low opacity-0 group-hover/row:opacity-100 hover:text-ink-mid transition-opacity touch-none"
-              onClick={e => e.stopPropagation()}
-            >
-              <svg className="w-3 h-3" viewBox="0 0 8 14" fill="currentColor">
-                <circle cx="2" cy="2"  r="1.2"/><circle cx="6" cy="2"  r="1.2"/>
-                <circle cx="2" cy="7"  r="1.2"/><circle cx="6" cy="7"  r="1.2"/>
-                <circle cx="2" cy="12" r="1.2"/><circle cx="6" cy="12" r="1.2"/>
-              </svg>
-            </button>
-          )}
-
           <button
             onClick={onClick}
+            {...(dragHandleListeners ?? {})}
+            {...(dragHandleAttributes ?? {})}
             className={clsx(
-              'flex-1 flex items-center gap-2 py-1.5 text-sm transition-colors text-left min-w-0',
+              'flex-1 flex items-center gap-2 py-1.5 text-sm transition-colors text-left min-w-0 select-none',
               depth === 1 ? 'pl-1 pr-2' : 'pr-2',
-              active ? 'text-brand font-semibold' : 'text-ink-mid hover:text-ink'
+              active ? 'text-brand font-semibold' : 'text-ink-mid hover:text-ink',
+              depth === 0 && dragHandleListeners && !isProtected ? 'cursor-grab active:cursor-grabbing' : ''
             )}
           >
             {depth === 0
@@ -756,7 +744,7 @@ export function Sidebar({
                     collapsed={false}
                   />
                   <AnimatedCollapse open={!!expandedCats[cat.name]}>
-                    <div className="ml-[22px] pl-3 border-l border-wire-dim space-y-0.5 pt-0.5 pb-1">
+                    <div className="ml-[30px] pl-3 border-l border-wire-dim space-y-0.5 pt-0.5 pb-1">
                       {cat.children.map(sub => (
                         <CategoryRow
                           key={sub.name}
