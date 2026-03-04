@@ -420,7 +420,7 @@ function CategoryRow({
               'flex-1 flex items-center gap-2 py-1.5 text-sm transition-colors text-left min-w-0 select-none',
               depth === 1 ? 'pl-1 pr-2' : 'pr-2',
               active ? 'text-brand font-semibold' : 'text-ink-mid hover:text-ink',
-              depth === 0 && dragHandleListeners && !isProtected ? 'cursor-grab active:cursor-grabbing' : ''
+              dragHandleListeners && !isProtected ? 'cursor-grab active:cursor-grabbing' : ''
             )}
           >
             {depth === 0
@@ -566,32 +566,22 @@ function AddInput({ placeholder, onAdd, onCancel }) {
   )
 }
 
-// ── Sortable category row (DnD wrapper) ────────────────────────
+// ── Sortable wrappers (DnD) ────────────────────────────────────
 
 function SortableCategoryRow({ id, ...props }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id })
-
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
   return (
-    <div
-      ref={setNodeRef}
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-        opacity: isDragging ? 0.4 : 1,
-      }}
-    >
-      <CategoryRow
-        {...props}
-        dragHandleListeners={listeners}
-        dragHandleAttributes={attributes}
-      />
+    <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}>
+      <CategoryRow {...props} dragHandleListeners={listeners} dragHandleAttributes={attributes} />
+    </div>
+  )
+}
+
+function SortableSubcategoryRow({ id, ...props }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
+  return (
+    <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}>
+      <CategoryRow {...props} dragHandleListeners={listeners} dragHandleAttributes={attributes} />
     </div>
   )
 }
@@ -630,6 +620,7 @@ export function Sidebar({
   onRenameCategory,
   onDeleteCategory,
   onReorderCategories,
+  onReorderSubcategories,
   onUpdateCategory,
 }) {
   const [expandedCats, setExpandedCats] = useState({})
@@ -649,11 +640,24 @@ export function Sidebar({
   function handleDragEnd({ active, over }) {
     setActiveId(null)
     if (!over || active.id === over.id) return
-    const oldIndex = draggable.findIndex(c => c.name === active.id)
-    const newIndex = draggable.findIndex(c => c.name === over.id)
-    const reordered = arrayMove(draggable, oldIndex, newIndex)
-    const newOrder = [...reordered.map(c => c.name), ...(uncategorized ? ['Uncategorized'] : [])]
-    if (onReorderCategories) onReorderCategories(newOrder)
+    if (String(active.id).includes('::')) {
+      // Subcategory drag
+      const [parentName, subName] = String(active.id).split('::')
+      const [overParent, overSub] = String(over.id).split('::')
+      if (parentName !== overParent) return
+      const parentCat = draggable.find(c => c.name === parentName)
+      if (!parentCat) return
+      const children = parentCat.children.map(c => c.name)
+      const reordered = arrayMove(children, children.indexOf(subName), children.indexOf(overSub))
+      if (onReorderSubcategories) onReorderSubcategories(parentName, reordered)
+    } else {
+      // Top-level drag
+      const oldIndex = draggable.findIndex(c => c.name === active.id)
+      const newIndex = draggable.findIndex(c => c.name === over.id)
+      const reordered = arrayMove(draggable, oldIndex, newIndex)
+      const newOrder = [...reordered.map(c => c.name), ...(uncategorized ? ['Uncategorized'] : [])]
+      if (onReorderCategories) onReorderCategories(newOrder)
+    }
   }
 
   const toggleExpand = (name) =>
@@ -745,9 +749,14 @@ export function Sidebar({
                   />
                   <AnimatedCollapse open={!!expandedCats[cat.name]}>
                     <div className="ml-[30px] pl-3 border-l border-wire-dim space-y-0.5 pt-0.5 pb-1">
+                      <SortableContext
+                        items={cat.children.map(sub => `${cat.name}::${sub.name}`)}
+                        strategy={verticalListSortingStrategy}
+                      >
                       {cat.children.map(sub => (
-                        <CategoryRow
+                        <SortableSubcategoryRow
                           key={sub.name}
+                          id={`${cat.name}::${sub.name}`}
                           name={sub.name}
                           count={sub.count}
                           active={category === cat.name && subcategory === sub.name}
@@ -756,7 +765,6 @@ export function Sidebar({
                           hasChildren={false}
                           onClick={() => { setCategory(cat.name); setSubcategory(sub.name) }}
                           onToggleExpand={null}
-
                           onRename={(newName) => onRenameCategory(sub.name, newName, cat.name)}
                           onDelete={() => onDeleteCategory(sub.name, cat.name)}
                           onAddSub={null}
@@ -766,6 +774,7 @@ export function Sidebar({
                           collapsed={false}
                         />
                       ))}
+                      </SortableContext>
                       {addingSub === cat.name ? (
                         <AddInput
                           placeholder="Subcategory name…"
@@ -790,26 +799,30 @@ export function Sidebar({
             </SortableContext>
 
             <DragOverlay>
-              {activeCategory && (
-                <div className="bg-lift border border-wire rounded-lg shadow-xl opacity-95">
-                  <CategoryRow
-                    name={activeCategory.name}
-                    count={activeCategory.count}
-                    active={false}
-                    depth={0}
-                    expanded={false}
-                    hasChildren={activeCategory.children.length > 0}
-                    onClick={() => {}}
-                    onToggleExpand={null}
-                    onAdd={null}
-                    onRename={null}
-                    onDelete={null}
-                    icon={activeCategory.icon ?? null}
-                    color={activeCategory.color ?? null}
-                    collapsed={false}
-                  />
-                </div>
-              )}
+              {activeId && (() => {
+                if (String(activeId).includes('::')) {
+                  const [parentName, subName] = String(activeId).split('::')
+                  const parentCat = draggable.find(c => c.name === parentName)
+                  const sub = parentCat?.children.find(c => c.name === subName)
+                  if (!sub) return null
+                  return (
+                    <div className="bg-lift border border-wire rounded-lg shadow-xl opacity-95">
+                      <CategoryRow name={sub.name} count={sub.count} active={false} depth={1}
+                        expanded={false} hasChildren={false} onClick={() => {}} onToggleExpand={null}
+                        onRename={null} onDelete={null} icon={sub.icon ?? null} color={sub.color ?? null} collapsed={false} />
+                    </div>
+                  )
+                }
+                const cat = draggable.find(c => c.name === activeId)
+                if (!cat) return null
+                return (
+                  <div className="bg-lift border border-wire rounded-lg shadow-xl opacity-95">
+                    <CategoryRow name={cat.name} count={cat.count} active={false} depth={0}
+                      expanded={false} hasChildren={cat.children.length > 0} onClick={() => {}} onToggleExpand={null}
+                      onRename={null} onDelete={null} icon={cat.icon ?? null} color={cat.color ?? null} collapsed={false} />
+                  </div>
+                )
+              })()}
             </DragOverlay>
           </DndContext>
         ) : (

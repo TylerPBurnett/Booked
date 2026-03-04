@@ -13,7 +13,7 @@ import { BookmarkDetail } from './components/BookmarkDetail.jsx'
 function BookedApp() {
   const { bookmarks, meta, loading, syncing, sync, updateBookmark } = useBookmarks()
   const filters = useFilters(bookmarks)
-  const { categories, createCategory, renameCategory: renameCat, deleteCategory, reorderCategories, updateCategory } = useCategories()
+  const { categories, createCategory, renameCategory: renameCat, deleteCategory, reorderCategories, reorderSubcategories, updateCategory } = useCategories()
   const { query, setQuery, results } = useFuzzySearch(filters.filtered)
   const [selectedId, setSelectedId] = useState(null)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -69,6 +69,7 @@ function BookedApp() {
             onRenameCategory={renameCat}
             onDeleteCategory={deleteCategory}
             onReorderCategories={reorderCategories}
+            onReorderSubcategories={reorderSubcategories}
             onUpdateCategory={updateCategory}
           />
         }
@@ -96,7 +97,7 @@ function BookedApp() {
             <p className="text-ink-low text-xs font-mono">
               Run{' '}
               <code className="px-2 py-0.5 bg-lift border border-wire rounded text-brand">
-                /x-bookmarks --sync
+                /Booked --sync
               </code>{' '}
               to fetch from X
             </p>

@@ -49,6 +49,20 @@ export function useCategories() {
     await fetch_()
   }, [fetch_])
 
+  const reorderSubcategories = useCallback(async (parentName, childOrder) => {
+    setCategories(prev => prev.map(c =>
+      c.name === parentName
+        ? { ...c, children: childOrder.map(n => c.children.find(ch => ch.name === n)).filter(Boolean) }
+        : c
+    ))
+    const res = await fetch(`/api/categories/${encodeURIComponent(parentName)}/reorder-children`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order: childOrder }),
+    })
+    if (!res.ok) { await fetch_(); throw new Error((await res.json()).error) }
+  }, [fetch_])
+
   const reorderCategories = useCallback(async (nameOrder) => {
     // Optimistic update — reorder local state immediately
     setCategories(prev => {
@@ -68,5 +82,5 @@ export function useCategories() {
     }
   }, [fetch_])
 
-  return { categories, createCategory, renameCategory, updateCategory, deleteCategory, reorderCategories, refetch: fetch_ }
+  return { categories, createCategory, renameCategory, updateCategory, deleteCategory, reorderCategories, reorderSubcategories, refetch: fetch_ }
 }

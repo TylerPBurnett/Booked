@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import {
   readMeta, writeMeta, readBookmarks, writeBookmarks,
-  addCategory, removeCategory, renameCategory, reorderCategories,
+  addCategory, removeCategory, renameCategory, reorderCategories, reorderSubcategories,
 } from '../data.js'
 
 const router = Router()
@@ -133,6 +133,19 @@ router.put('/reorder', (req, res) => {
     return res.status(400).json({ error: err.message })
   }
 
+  writeMeta(meta)
+  res.json({ ok: true })
+})
+
+// PUT /api/categories/:name/reorder-children — reorder subcategories within a parent
+router.put('/:name/reorder-children', (req, res) => {
+  const { name } = req.params
+  const { order } = req.body
+  if (!Array.isArray(order)) return res.status(400).json({ error: 'order must be an array' })
+  let meta = readMeta()
+  try { meta = reorderSubcategories(meta, name, order) } catch (err) {
+    return res.status(400).json({ error: err.message })
+  }
   writeMeta(meta)
   res.json({ ok: true })
 })

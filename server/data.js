@@ -203,3 +203,15 @@ export function reorderCategories(meta, nameOrder) {
   }
   return { ...meta, categories: nameOrder.map(n => byName[n]) }
 }
+
+/** Return new meta with a parent category's children reordered. */
+export function reorderSubcategories(meta, parentName, childOrder) {
+  const parent = meta.categories.find(c => c.name === parentName)
+  if (!parent) throw new Error(`Category "${parentName}" not found`)
+  if (childOrder.length !== parent.children.length) throw new Error('order must include all subcategories')
+  if (new Set(childOrder).size !== childOrder.length) throw new Error('childOrder contains duplicate names')
+  for (const name of childOrder) {
+    if (!parent.children.includes(name)) throw new Error(`Unknown subcategory "${name}"`)
+  }
+  return { ...meta, categories: meta.categories.map(c => c.name === parentName ? { ...c, children: childOrder } : c) }
+}
