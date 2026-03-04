@@ -5,30 +5,43 @@ export function Layout({ sidebar, header, children, collapsed, onToggleSidebar, 
   const isDragging = useRef(false)
   const dragStartX = useRef(0)
   const dragStartWidth = useRef(0)
+  const lastWidth = useRef(0)
 
   const handleDragStart = useCallback((e) => {
     e.preventDefault()
     isDragging.current = true
     dragStartX.current = e.clientX
     dragStartWidth.current = collapsed ? 52 : sidebarWidth
+    lastWidth.current = collapsed ? 52 : sidebarWidth
+
+    // Track whether we expanded mid-drag (so collapsed stays stale but we handle it)
+    let expandedMidDrag = false
 
     const onMove = (e) => {
       if (!isDragging.current) return
       const delta = e.clientX - dragStartX.current
       const newWidth = dragStartWidth.current + delta
 
-      if (collapsed) {
+      if (collapsed && !expandedMidDrag) {
+        // Dragging right from collapsed — expand when past threshold
         if (newWidth > 180) {
-          onExpand(Math.min(newWidth, 400))
+          expandedMidDrag = true
+          const w = Math.min(newWidth, 400)
+          lastWidth.current = w
+          onExpand(w)
         }
       } else {
-        if (newWidth < 180) {
+        // Either was open to begin with, or just expanded mid-drag
+        if (!expandedMidDrag && newWidth < 180) {
+          // Collapse — only possible if we started open
           onCollapse()
           isDragging.current = false
           window.removeEventListener('mousemove', onMove)
           window.removeEventListener('mouseup', onUp)
         } else {
-          onResize(Math.min(newWidth, 400))
+          const w = Math.min(Math.max(newWidth, 180), 400)
+          lastWidth.current = w
+          onResize(w)
         }
       }
     }
@@ -36,7 +49,7 @@ export function Layout({ sidebar, header, children, collapsed, onToggleSidebar, 
     const onUp = () => {
       if (isDragging.current) {
         isDragging.current = false
-        onResizeEnd(Math.min(Math.max(sidebarWidth, 180), 400))
+        onResizeEnd(lastWidth.current)
       }
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('mouseup', onUp)
