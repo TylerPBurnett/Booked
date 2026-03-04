@@ -16,31 +16,33 @@ export function Layout({ sidebar, header, children, collapsed, onToggleSidebar, 
     dragStartWidth.current = collapsed ? 52 : sidebarWidth
     lastWidth.current = collapsed ? 52 : sidebarWidth
 
-    // Track whether we expanded mid-drag (so collapsed stays stale but we handle it)
+    // Track open/collapsed transitions mid-drag so listeners stay alive through snaps
     let expandedMidDrag = false
+    let collapsedMidDrag = false
 
     const onMove = (e) => {
       if (!isDragging.current) return
       const delta = e.clientX - dragStartX.current
       const newWidth = dragStartWidth.current + delta
 
-      if (collapsed && !expandedMidDrag) {
-        // Dragging right from collapsed — expand when past threshold
+      // Are we currently in a collapsed state (either started that way or snapped mid-drag)?
+      const effectivelyCollapsed = (collapsed && !expandedMidDrag) || collapsedMidDrag
+
+      if (effectivelyCollapsed) {
+        // Drag right past threshold → expand
         if (newWidth > 180) {
+          collapsedMidDrag = false
           expandedMidDrag = true
           const w = Math.min(newWidth, 400)
           lastWidth.current = w
           onExpand(w)
         }
       } else {
-        // Either was open to begin with, or just expanded mid-drag
-        if (!expandedMidDrag && newWidth < 180) {
-          // Collapse — only possible if we started open
+        if (newWidth < 180) {
+          // Drag left past threshold → collapse, but keep drag alive so user can reverse
+          collapsedMidDrag = true
+          expandedMidDrag = false
           onCollapse()
-          setDragging(false)
-          isDragging.current = false
-          window.removeEventListener('mousemove', onMove)
-          window.removeEventListener('mouseup', onUp)
         } else {
           const w = Math.min(Math.max(newWidth, 180), 400)
           lastWidth.current = w
@@ -53,7 +55,10 @@ export function Layout({ sidebar, header, children, collapsed, onToggleSidebar, 
       if (isDragging.current) {
         setDragging(false)
         isDragging.current = false
-        onResizeEnd(lastWidth.current)
+        // Only persist width if we ended in an open state
+        if (!collapsedMidDrag) {
+          onResizeEnd(lastWidth.current)
+        }
       }
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('mouseup', onUp)
