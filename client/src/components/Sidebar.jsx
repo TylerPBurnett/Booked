@@ -253,13 +253,95 @@ function ThemePicker({ collapsed }) {
   )
 }
 
+// ── Category menu ──────────────────────────────────────────────
+
+function CategoryMenu({ onRename, onAddSub, onChangeIcon, onChangeColor, onDelete, onClose, depth }) {
+  const ref = useRef(null)
+
+  useEffect(() => {
+    const handler = (e) => { if (!ref.current?.contains(e.target)) onClose() }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [onClose])
+
+  return (
+    <div
+      ref={ref}
+      className="absolute right-0 top-full mt-1 z-50 bg-lift border border-wire rounded-xl shadow-xl py-1 min-w-[160px]"
+      onClick={e => e.stopPropagation()}
+    >
+      <button
+        onClick={() => { onRename(); onClose() }}
+        className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-ink-mid hover:text-ink hover:bg-float transition-colors text-left"
+      >
+        <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 12 12" fill="none">
+          <path d="M2 10l2-1 5-5-1-1-5 5-1 2z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
+          <path d="M8 2l2 2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+        </svg>
+        Rename
+      </button>
+
+      {depth === 0 && onAddSub && (
+        <button
+          onClick={() => { onAddSub(); onClose() }}
+          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-ink-mid hover:text-ink hover:bg-float transition-colors text-left"
+        >
+          <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 12 12" fill="none">
+            <path d="M6 2v8M2 6h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+          </svg>
+          Add subcategory
+        </button>
+      )}
+
+      <button
+        onClick={() => { onChangeIcon(); onClose() }}
+        className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-ink-mid hover:text-ink hover:bg-float transition-colors text-left"
+      >
+        <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 12 12" fill="none">
+          <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.2"/>
+          <path d="M4 6.5c.4.8 1 1.5 2 1.5s1.6-.7 2-1.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+          <circle cx="4.5" cy="4.5" r=".75" fill="currentColor"/>
+          <circle cx="7.5" cy="4.5" r=".75" fill="currentColor"/>
+        </svg>
+        Change icon
+      </button>
+
+      <button
+        onClick={() => { onChangeColor(); onClose() }}
+        className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-ink-mid hover:text-ink hover:bg-float transition-colors text-left"
+      >
+        <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 12 12" fill="none">
+          <path d="M6 1.5a4.5 4.5 0 1 0 4.5 4.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+          <path d="M8 1l1 1-4.5 4.5L3 7l.5-1.5L8 1z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
+          <circle cx="10" cy="9.5" r="1.5" fill="currentColor" fillOpacity=".5" stroke="currentColor" strokeWidth="1"/>
+        </svg>
+        Change color
+      </button>
+
+      <div className="border-t border-wire-dim mx-2 my-0.5" />
+
+      <button
+        onClick={() => { onDelete(); onClose() }}
+        className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors text-left"
+      >
+        <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 12 12" fill="none">
+          <path d="M2 3h8M5 3V2h2v1M4 3l.5 7h3L8 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+        Delete
+      </button>
+    </div>
+  )
+}
+
 // ── Category row ───────────────────────────────────────────────
 
 function CategoryRow({
   name, count, active, depth, expanded, hasChildren,
   onClick, onToggleExpand,
   onAdd, onRename, onDelete,
-  onCtxMenu = null,
+  onAddSub = null,
+  onChangeIcon = null,
+  onChangeColor = null,
   collapsed: sidebarCollapsed,
   dragHandleListeners = null,
   dragHandleAttributes = {},
@@ -267,6 +349,7 @@ function CategoryRow({
   const [editing, setEditing] = useState(false)
   const [editVal, setEditVal] = useState(name)
   const [confirming, setConfirming] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const inputRef = useRef(null)
 
   useEffect(() => {
@@ -280,16 +363,6 @@ function CategoryRow({
   }
 
   const isProtected = name === 'Uncategorized' || name === 'All'
-
-  const handleContextMenu = (e) => {
-    if (!onCtxMenu || isProtected) return
-    e.preventDefault()
-    e.stopPropagation()
-    onCtxMenu(e.clientX, e.clientY, {
-      startEdit: () => { setEditVal(name); setEditing(true) },
-      startDelete: () => setConfirming(true),
-    })
-  }
 
   if (sidebarCollapsed) {
     if (depth > 0) return null
@@ -309,7 +382,7 @@ function CategoryRow({
   }
 
   return (
-    <div className="group/row relative" onContextMenu={handleContextMenu}>
+    <div className="group/row relative">
       {editing ? (
         <div className="flex items-center px-2 py-1">
           <input
@@ -357,8 +430,8 @@ function CategoryRow({
           <button
             onClick={onClick}
             className={clsx(
-              'flex-1 flex items-center gap-2 py-1.5 pr-2 text-sm transition-colors text-left min-w-0',
-              depth === 1 && 'pl-1',
+              'flex-1 flex items-center gap-2 py-1.5 text-sm transition-colors text-left min-w-0',
+              depth === 1 ? 'pl-1 pr-2' : 'pr-2',
               active ? 'text-brand font-semibold' : 'text-ink-mid hover:text-ink'
             )}
           >
@@ -369,10 +442,50 @@ function CategoryRow({
                 </svg>
             }
             <span className="truncate">{name}</span>
-            <span className={clsx('ml-auto shrink-0 text-xs tabular-nums font-mono', active ? 'text-brand' : 'text-ink-low')}>
-              {count}
-            </span>
           </button>
+
+          {/* Count / 3-dot menu swap */}
+          <div className="relative ml-auto shrink-0 flex items-center pr-2">
+            {isProtected ? (
+              <span className={clsx(
+                'text-xs tabular-nums font-mono',
+                active ? 'text-brand' : 'text-ink-low'
+              )}>
+                {count}
+              </span>
+            ) : (
+              <>
+                <span className={clsx(
+                  'text-xs tabular-nums font-mono transition-opacity duration-100',
+                  'group-hover/row:opacity-0',
+                  active ? 'text-brand' : 'text-ink-low'
+                )}>
+                  {count}
+                </span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setMenuOpen(o => !o) }}
+                  className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition-opacity duration-100 text-ink-low hover:text-ink"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
+                    <circle cx="8" cy="3" r="1.5"/>
+                    <circle cx="8" cy="8" r="1.5"/>
+                    <circle cx="8" cy="13" r="1.5"/>
+                  </svg>
+                </button>
+                {menuOpen && (
+                  <CategoryMenu
+                    depth={depth}
+                    onRename={() => { setEditVal(name); setEditing(true) }}
+                    onAddSub={depth === 0 ? onAddSub : null}
+                    onChangeIcon={onChangeIcon || (() => {})}
+                    onChangeColor={onChangeColor || (() => {})}
+                    onDelete={() => setConfirming(true)}
+                    onClose={() => setMenuOpen(false)}
+                  />
+                )}
+              </>
+            )}
+          </div>
         </div>
       )}
 
@@ -484,18 +597,6 @@ export function Sidebar({
   const [addingTop, setAddingTop] = useState(false)
   const [addingSub, setAddingSub] = useState(null)
   const [activeId, setActiveId] = useState(null)
-  const [ctxMenu, setCtxMenu] = useState(null) // { x, y, startEdit, startDelete }
-
-  useEffect(() => {
-    if (!ctxMenu) return
-    const close = () => setCtxMenu(null)
-    const onKey = (e) => { if (e.key === 'Escape') close() }
-    window.addEventListener('click', close)
-    window.addEventListener('keydown', onKey)
-    return () => { window.removeEventListener('click', close); window.removeEventListener('keydown', onKey) }
-  }, [ctxMenu])
-
-  const handleCtxMenu = (x, y, fns) => setCtxMenu({ x, y, ...fns })
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -585,7 +686,9 @@ export function Sidebar({
                     onAdd={null}
                     onRename={(newName) => onRenameCategory(cat.name, newName)}
                     onDelete={() => onDeleteCategory(cat.name)}
-                    onCtxMenu={handleCtxMenu}
+                    onAddSub={() => setAddingSub(cat.name)}
+                    onChangeIcon={() => {}}
+                    onChangeColor={() => {}}
                     collapsed={false}
                   />
                   {expandedCats[cat.name] && (
@@ -604,7 +707,9 @@ export function Sidebar({
                           onAdd={null}
                           onRename={(newName) => onRenameCategory(sub.name, newName, cat.name)}
                           onDelete={() => onDeleteCategory(sub.name, cat.name)}
-                          onCtxMenu={handleCtxMenu}
+                          onAddSub={null}
+                          onChangeIcon={() => {}}
+                          onChangeColor={() => {}}
                           collapsed={false}
                         />
                       ))}
@@ -743,36 +848,6 @@ export function Sidebar({
           </>
         )}
       </div>
-
-      {/* Context menu */}
-      {ctxMenu && (
-        <div
-          className="fixed z-50 bg-lift border border-wire rounded-xl shadow-xl py-1 min-w-[144px]"
-          style={{ left: ctxMenu.x, top: ctxMenu.y }}
-          onClick={e => e.stopPropagation()}
-        >
-          <button
-            onClick={() => { ctxMenu.startEdit(); setCtxMenu(null) }}
-            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-ink-mid hover:text-ink hover:bg-float transition-colors text-left"
-          >
-            <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 12 12" fill="none">
-              <path d="M2 10l2-1 5-5-1-1-5 5-1 2z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
-              <path d="M8 2l2 2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-            </svg>
-            Rename
-          </button>
-          <div className="border-t border-wire-dim mx-2 my-0.5" />
-          <button
-            onClick={() => { ctxMenu.startDelete(); setCtxMenu(null) }}
-            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors text-left"
-          >
-            <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 12 12" fill="none">
-              <path d="M2 3h8M5 3V2h2v1M4 3l.5 7h3L8 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            Delete
-          </button>
-        </div>
-      )}
 
       {/* Footer */}
       <div className={clsx('shrink-0 border-t border-wire-dim pt-3 space-y-1', collapsed ? 'px-2' : '')}>
