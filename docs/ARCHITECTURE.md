@@ -29,6 +29,7 @@ The X API charges for bookmark access. Booked bypasses that entirely by intercep
 │   ├── import-cookies.js     ← Preferred auth: convert Cookie-Editor export → storageState
 │   ├── routes/
 │   │   ├── bookmarks.js      ← CRUD for bookmark records
+│   │   ├── categories.js     ← Category tree CRUD + reorder endpoints
 │   │   ├── meta.js           ← Metadata + tag management
 │   │   └── sync.js           ← Orchestrates scrape → classify → upsert
 │   ├── data.test.js          ← Unit tests for upsert merge logic
@@ -46,11 +47,12 @@ The X API charges for bookmark access. Booked bypasses that entirely by intercep
 │       ├── App.jsx           ← Root component, wires hooks + layout
 │       ├── hooks/
 │       │   ├── useBookmarks.js    ← Fetch, update, delete, sync
+│       │   ├── useCategories.js   ← Category CRUD + drag-reorder
 │       │   ├── useFilters.js      ← Category/tag/sort/time filtering
 │       │   └── useFuzzySearch.js  ← Fuse.js fuzzy search
 │       └── components/
 │           ├── Layout.jsx         ← Two-column shell (sidebar + main)
-│           ├── Sidebar.jsx        ← Category nav, tag nav, sync button
+│           ├── Sidebar.jsx        ← Category tree (drag/drop, icons, colors), tags, sync
 │           ├── TopBar.jsx         ← Search, sort, time range, media filter
 │           ├── BookmarkCard.jsx   ← Card in the grid
 │           └── BookmarkDetail.jsx ← Right-side drawer for editing
@@ -284,10 +286,31 @@ The sort value format is `"field_direction"` where `field` can be a dot-path lik
 ```json
 {
   "lastSyncedAt": "2026-03-01T09:00:00Z",
-  "categories": ["Design", "Dev", "Tools", "Threads", "Reads", "Uncategorized"],
-  "totalBookmarks": 874
+  "totalBookmarks": 874,
+  "categories": [
+    {
+      "name": "Design",
+      "icon": "palette",
+      "color": "#8b5cf6",
+      "children": ["Typography", "Inspiration"]
+    },
+    {
+      "name": "Dev",
+      "icon": "code-2",
+      "color": null,
+      "children": []
+    },
+    {
+      "name": "Uncategorized",
+      "icon": null,
+      "color": null,
+      "children": []
+    }
+  ]
 }
 ```
+
+`icon` is a Lucide icon name (e.g. `"code-2"`, `"palette"`) or `null` for the default. `color` is a hex string or `null`. `children` is an ordered list of subcategory name strings. `Uncategorized` is always last and is protected (cannot be renamed or deleted).
 
 `lastSyncedAt` is the key field that makes incremental sync (`--sync`) work. It's written by `upsertBookmarks()` after every successful sync.
 

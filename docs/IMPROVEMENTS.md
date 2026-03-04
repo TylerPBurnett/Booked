@@ -11,7 +11,8 @@ Ordered roughly by impact-to-effort ratio. Items near the top deliver the most v
 - **Saved-order model** — Added immutable local fields (`savedAt`, `savedSeq`) so Booked can sort by when items were first seen in the app. `Saved (newest)` is now the default sort.
 - **Incremental sync fix** — `--sync` now stops based on a streak of already-known bookmark IDs instead of tweet dates, so newly-bookmarked older posts are no longer skipped.
 - **Sidebar collapse** — collapsible sidebar with localStorage persistence added.
-- **Theme system** — `ThemeProvider` context wired in; dark/light groundwork laid.
+- **Theme system** — 14 full themes (dark, light, dim, Gruvbox, Catppuccin, Monokai, Dracula, Nord, Tokyo Night) via CSS custom properties. Theme picker in the topbar. `ThemeProvider` context with localStorage persistence.
+- **Sidebar redesign** — full category tree with expand/collapse, drag-to-reorder (top-level and subcategories), per-category Lucide icon picker (90 icons, 6 groups, searchable) and color picker. Section headers with inline add button. `position: fixed` menus escape sidebar overflow clipping.
 
 ---
 
@@ -91,22 +92,18 @@ Ordered roughly by impact-to-effort ratio. Items near the top deliver the most v
 
 ---
 
-### 4. Tag & Category Management Screen
+### 4. Tag Management Screen
 
-**What:** A dedicated settings panel (accessible from the sidebar or ⚙ icon) for:
+**What:** A dedicated panel for tag housekeeping:
 - Rename a tag across all bookmarks
 - Merge two tags into one
 - Delete a tag (with count of affected bookmarks)
-- Reorder categories via drag-and-drop
-- Add a new custom category
 
-**Why:** Tags accumulate drift over time. The API endpoints for rename/delete already exist — just need a UI.
+**Why:** Tags accumulate drift over time. The API endpoints for rename/delete already exist (`POST /api/meta/tags/rename`, `POST /api/meta/tags/delete`) — just need a UI. Category management (add/rename/delete/reorder/icons/colors) is already fully implemented in the sidebar.
 
 **Implementation:**
-- `SettingsModal` component triggered by a gear icon in the sidebar footer
+- `TagManagerModal` triggered from the sidebar tags section header
 - Tag list with usage counts, inline rename input, merge dropdown, delete with confirm
-- Category list with drag handle (`@dnd-kit/sortable` or similar)
-- Wire to existing `POST /api/meta/tags/rename` and `POST /api/meta/tags/delete`
 
 ---
 
@@ -210,14 +207,13 @@ Ordered roughly by impact-to-effort ratio. Items near the top deliver the most v
 
 ## Lower Priority / Nice to Have
 
-### 12. Dark/Light/System Theme Toggle
+### 12. System Theme Auto-Detection
 
-**What:** Currently hardcoded dark. Add a theme toggle (sun/moon icon in sidebar footer) that switches between dark, light, and system preference. Persist choice to `localStorage`.
+**What:** Detect the OS `prefers-color-scheme` setting on first load and apply the closest matching Booked theme automatically (dark → `dark`, light → `light`). Currently defaults to `dark` regardless of system preference.
 
 **Implementation:**
-- Tailwind dark mode via class strategy (`darkMode: 'class'` in tailwind.config)
-- Toggle button updates `document.documentElement.classList`
-- Full light theme pass over all component classes
+- In `ThemeContext`, if no `localStorage` value is set, read `window.matchMedia('(prefers-color-scheme: dark)')` and pick `dark` or `light` accordingly
+- Optionally, add a "System" option in the theme picker that stays in sync with OS changes via a `MediaQueryList` listener
 
 ---
 
