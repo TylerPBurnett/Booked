@@ -17,6 +17,78 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { clsx } from 'clsx'
+import {
+  Folder, FolderOpen, Star, Heart, Bookmark, Tag, Hash, Flag, Pin, Archive, Inbox, Bell,
+  Code2, Terminal, Cpu, Globe, Database, Server, Wifi, Lock, Key, Shield, Bug, GitBranch, Package, Wrench, Settings,
+  ImageIcon, Video, Music, FileText, BookOpen, Newspaper, Camera, Mic, Film, Tv, Headphones,
+  User, Users, Briefcase, Building2, Mail, MessageSquare, Phone, Calendar, Clock, Award, Target, Lightbulb,
+  FlaskConical, Atom, Leaf, Sun, Moon, Cloud, Zap, Flame,
+  ShoppingCart, DollarSign, Home, Map, Compass, Palette, Scissors, Gamepad2, Rocket, Coffee,
+  Layers, LayoutGrid, Link, Smile, Pencil, Truck, Brain, Dumbbell, Plane, GraduationCap,
+} from 'lucide-react'
+
+// ── Lucide icon registry ────────────────────────────────────────
+
+const ICON_GROUPS = [
+  { label: 'General', icons: [
+    { name: 'folder', Icon: Folder }, { name: 'folder-open', Icon: FolderOpen },
+    { name: 'star', Icon: Star }, { name: 'heart', Icon: Heart },
+    { name: 'bookmark', Icon: Bookmark }, { name: 'tag', Icon: Tag },
+    { name: 'hash', Icon: Hash }, { name: 'flag', Icon: Flag },
+    { name: 'pin', Icon: Pin }, { name: 'archive', Icon: Archive },
+    { name: 'inbox', Icon: Inbox }, { name: 'bell', Icon: Bell },
+    { name: 'layers', Icon: Layers }, { name: 'layout-grid', Icon: LayoutGrid },
+    { name: 'link', Icon: Link }, { name: 'smile', Icon: Smile },
+  ]},
+  { label: 'Tech', icons: [
+    { name: 'code-2', Icon: Code2 }, { name: 'terminal', Icon: Terminal },
+    { name: 'cpu', Icon: Cpu }, { name: 'globe', Icon: Globe },
+    { name: 'database', Icon: Database }, { name: 'server', Icon: Server },
+    { name: 'wifi', Icon: Wifi }, { name: 'lock', Icon: Lock },
+    { name: 'key', Icon: Key }, { name: 'shield', Icon: Shield },
+    { name: 'bug', Icon: Bug }, { name: 'git-branch', Icon: GitBranch },
+    { name: 'package', Icon: Package }, { name: 'wrench', Icon: Wrench },
+    { name: 'settings', Icon: Settings }, { name: 'brain', Icon: Brain },
+  ]},
+  { label: 'Media', icons: [
+    { name: 'image', Icon: ImageIcon }, { name: 'video', Icon: Video },
+    { name: 'music', Icon: Music }, { name: 'file-text', Icon: FileText },
+    { name: 'book-open', Icon: BookOpen }, { name: 'newspaper', Icon: Newspaper },
+    { name: 'camera', Icon: Camera }, { name: 'mic', Icon: Mic },
+    { name: 'film', Icon: Film }, { name: 'tv', Icon: Tv },
+    { name: 'headphones', Icon: Headphones }, { name: 'pencil', Icon: Pencil },
+  ]},
+  { label: 'Work', icons: [
+    { name: 'user', Icon: User }, { name: 'users', Icon: Users },
+    { name: 'briefcase', Icon: Briefcase }, { name: 'building-2', Icon: Building2 },
+    { name: 'mail', Icon: Mail }, { name: 'message-square', Icon: MessageSquare },
+    { name: 'phone', Icon: Phone }, { name: 'calendar', Icon: Calendar },
+    { name: 'clock', Icon: Clock }, { name: 'award', Icon: Award },
+    { name: 'target', Icon: Target }, { name: 'lightbulb', Icon: Lightbulb },
+    { name: 'graduation-cap', Icon: GraduationCap }, { name: 'truck', Icon: Truck },
+  ]},
+  { label: 'Lifestyle', icons: [
+    { name: 'home', Icon: Home }, { name: 'shopping-cart', Icon: ShoppingCart },
+    { name: 'dollar-sign', Icon: DollarSign }, { name: 'coffee', Icon: Coffee },
+    { name: 'dumbbell', Icon: Dumbbell }, { name: 'plane', Icon: Plane },
+    { name: 'map', Icon: Map }, { name: 'compass', Icon: Compass },
+    { name: 'palette', Icon: Palette }, { name: 'scissors', Icon: Scissors },
+    { name: 'gamepad-2', Icon: Gamepad2 }, { name: 'rocket', Icon: Rocket },
+  ]},
+  { label: 'Nature', icons: [
+    { name: 'flask-conical', Icon: FlaskConical }, { name: 'atom', Icon: Atom },
+    { name: 'leaf', Icon: Leaf }, { name: 'sun', Icon: Sun },
+    { name: 'moon', Icon: Moon }, { name: 'cloud', Icon: Cloud },
+    { name: 'zap', Icon: Zap }, { name: 'flame', Icon: Flame },
+  ]},
+]
+
+const ICON_MAP = Object.fromEntries(ICON_GROUPS.flatMap(g => g.icons.map(i => [i.name, i.Icon])))
+
+function LucideIcon({ name, className }) {
+  const Icon = ICON_MAP[name]
+  return Icon ? <Icon className={className} /> : null
+}
 
 // ── Category icons ─────────────────────────────────────────────
 
@@ -160,8 +232,7 @@ function CategoryMenu({ onRename, onAddSub, onChangeIcon, onChangeColor, onDelet
   const style = anchorRect ? {
     position: 'fixed',
     top: anchorRect.bottom + 4,
-    left: Math.min(anchorRect.right, window.innerWidth - 170),
-    transform: 'translateX(-100%)',
+    left: Math.max(8, Math.min(anchorRect.right - 160, window.innerWidth - 168)),
   } : {}
 
   return (
@@ -234,46 +305,93 @@ function CategoryMenu({ onRename, onAddSub, onChangeIcon, onChangeColor, onDelet
   )
 }
 
-// ── Emoji picker ──────────────────────────────────────────────
+// ── Icon picker ────────────────────────────────────────────────
 
-const CATEGORY_EMOJIS = [
-  '📁', '📂', '⭐', '❤️', '🔥', '💡', '🎯', '🚀',
-  '💻', '🎨', '📝', '📚', '🔧', '🎵', '📷', '🌍',
-  '💰', '🏠', '🎮', '📱', '🔒', '✅', '📌', '💬',
-  '🧪', '📊', '🗂️', '💼', '🎁', '🔗', '📖', '✨',
-]
-
-function EmojiPicker({ onSelect, onClose, anchorRect }) {
+function IconPicker({ onSelect, currentIcon, onClose, anchorRect }) {
   const ref = useRef(null)
+  const [query, setQuery] = useState('')
+  const inputRef = useRef(null)
+
   useEffect(() => {
     const handler = (e) => { if (!ref.current?.contains(e.target)) onClose() }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [onClose])
 
+  useEffect(() => { inputRef.current?.focus() }, [])
+
   const style = anchorRect ? {
     position: 'fixed',
     top: anchorRect.bottom + 4,
-    left: Math.min(anchorRect.right, window.innerWidth - 230),
-    transform: 'translateX(-100%)',
+    left: Math.max(8, Math.min(anchorRect.right - 252, window.innerWidth - 260)),
   } : {}
 
+  const q = query.toLowerCase()
+  const filtered = q
+    ? ICON_GROUPS.flatMap(g => g.icons).filter(i => i.name.includes(q))
+    : null
+
   return (
-    <div ref={ref} className="z-[100] bg-lift border border-wire rounded-xl shadow-xl p-2 w-[220px]" style={style}>
-      <div className="grid grid-cols-8 gap-1">
-        {CATEGORY_EMOJIS.map(emoji => (
-          <button key={emoji} onClick={() => onSelect(emoji)}
-            className="w-6 h-6 flex items-center justify-center rounded hover:bg-float text-sm"
-          >
-            {emoji}
-          </button>
-        ))}
+    <div ref={ref} className="z-[100] bg-lift border border-wire rounded-xl shadow-xl w-[252px]" style={style}
+      onClick={e => e.stopPropagation()}>
+      {/* Search */}
+      <div className="px-2 pt-2 pb-1">
+        <input
+          ref={inputRef}
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder="Search icons…"
+          className="w-full bg-float border border-wire rounded-md px-2 py-1 text-xs text-ink placeholder-ink-low outline-none focus:border-brand"
+        />
       </div>
+
+      {/* Icon grid */}
+      <div className="overflow-y-auto max-h-[220px] px-2 pb-2 scrollbar-thin">
+        {filtered ? (
+          filtered.length === 0
+            ? <p className="text-xs text-ink-low py-4 text-center">No icons found</p>
+            : <div className="grid grid-cols-8 gap-0.5 pt-1">
+                {filtered.map(({ name, Icon }) => (
+                  <IconBtn key={name} name={name} Icon={Icon} active={currentIcon === name} onSelect={onSelect} />
+                ))}
+              </div>
+        ) : (
+          ICON_GROUPS.map(group => (
+            <div key={group.label}>
+              <p className="text-[9px] font-semibold uppercase tracking-widest text-ink-low pt-2 pb-1 px-0.5">
+                {group.label}
+              </p>
+              <div className="grid grid-cols-8 gap-0.5">
+                {group.icons.map(({ name, Icon }) => (
+                  <IconBtn key={name} name={name} Icon={Icon} active={currentIcon === name} onSelect={onSelect} />
+                ))}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className="border-t border-wire-dim mx-2" />
       <button onClick={() => onSelect(null)}
-        className="w-full mt-1.5 text-xs text-ink-low hover:text-ink-mid py-1 rounded hover:bg-float transition-colors">
+        className="w-full text-xs text-ink-low hover:text-ink-mid py-1.5 rounded-b-xl hover:bg-float transition-colors">
         Reset to default
       </button>
     </div>
+  )
+}
+
+function IconBtn({ name, Icon, active, onSelect }) {
+  return (
+    <button
+      onClick={() => onSelect(name)}
+      title={name}
+      className={clsx(
+        'w-7 h-7 flex items-center justify-center rounded-md transition-colors',
+        active ? 'bg-brand-wash text-brand' : 'text-ink-mid hover:bg-float hover:text-ink'
+      )}
+    >
+      <Icon className="w-4 h-4" />
+    </button>
   )
 }
 
@@ -296,8 +414,7 @@ function ColorPicker({ onSelect, currentColor, onClose, anchorRect }) {
   const style = anchorRect ? {
     position: 'fixed',
     top: anchorRect.bottom + 4,
-    left: Math.min(anchorRect.right, window.innerWidth - 180),
-    transform: 'translateX(-100%)',
+    left: Math.max(8, Math.min(anchorRect.right - 170, window.innerWidth - 178)),
   } : {}
 
   return (
@@ -338,7 +455,7 @@ function CategoryRow({
   const [editVal, setEditVal] = useState(name)
   const [confirming, setConfirming] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [emojiPickerOpen, setEmojiPickerOpen] = useState(false)
+  const [iconPickerOpen, setIconPickerOpen] = useState(false)
   const [colorPickerOpen, setColorPickerOpen] = useState(false)
   const [anchorRect, setAnchorRect] = useState(null)
   const inputRef = useRef(null)
@@ -367,14 +484,8 @@ function CategoryRow({
             active ? 'bg-brand-wash text-brand' : 'text-ink-mid hover:text-ink hover:bg-float'
           )}
         >
-          <span className="shrink-0" style={color && !icon ? { color } : undefined}>
-            {icon
-              ? <span className="w-4 h-4 flex items-center justify-center text-sm relative">
-                  {icon}
-                  {color && <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-lift" style={{ background: color }} />}
-                </span>
-              : getCategoryIcon(name)
-            }
+          <span className="shrink-0" style={color ? { color } : undefined}>
+            {icon ? <LucideIcon name={icon} className="w-4 h-4 shrink-0" /> : getCategoryIcon(name)}
           </span>
         </button>
       </Tip>
@@ -424,14 +535,8 @@ function CategoryRow({
             )}
           >
             {depth === 0
-              ? <span className="shrink-0" style={color && !icon ? { color } : undefined}>
-                  {icon
-                    ? <span className="w-4 h-4 flex items-center justify-center text-sm relative">
-                        {icon}
-                        {color && <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-lift" style={{ background: color }} />}
-                      </span>
-                    : getCategoryIcon(name)
-                  }
+              ? <span className="shrink-0" style={color ? { color } : undefined}>
+                  {icon ? <LucideIcon name={icon} className="w-4 h-4 shrink-0" /> : getCategoryIcon(name)}
                 </span>
               : <svg className="w-3.5 h-3.5 shrink-0 flex-none opacity-60" viewBox="0 0 14 14" fill="none">
                   <path d="M1.5 4.5C1.5 3.67 2.17 3 3 3h2.38l1.24 1.5H11c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5H3c-.83 0-1.5-.67-1.5-1.5v-6z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
@@ -480,17 +585,18 @@ function CategoryRow({
                     anchorRect={anchorRect}
                     onRename={() => { setEditVal(name); setEditing(true) }}
                     onAddSub={depth === 0 ? onAddSub : null}
-                    onChangeIcon={() => setEmojiPickerOpen(true)}
+                    onChangeIcon={() => setIconPickerOpen(true)}
                     onChangeColor={() => setColorPickerOpen(true)}
                     onDelete={() => setConfirming(true)}
                     onClose={() => setMenuOpen(false)}
                   />
                 )}
-                {emojiPickerOpen && (
-                  <EmojiPicker
+                {iconPickerOpen && (
+                  <IconPicker
                     anchorRect={anchorRect}
-                    onSelect={(emoji) => { if (onUpdateCategory) onUpdateCategory(name, { icon: emoji }); setEmojiPickerOpen(false) }}
-                    onClose={() => setEmojiPickerOpen(false)}
+                    currentIcon={icon}
+                    onSelect={(iconName) => { if (onUpdateCategory) onUpdateCategory(name, { icon: iconName }); setIconPickerOpen(false) }}
+                    onClose={() => setIconPickerOpen(false)}
                   />
                 )}
                 {colorPickerOpen && (
