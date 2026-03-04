@@ -4,7 +4,7 @@
 
 Booked is a personal X (Twitter) bookmark manager that runs entirely on your local machine. It has two distinct parts:
 
-1. **A Claude skill** (`/x-bookmarks`) — scrapes your bookmarks from X using your existing Chrome session, classifies them with AI, and saves them locally
+1. **A Claude skill** (`/Booked`) — scrapes your bookmarks from X using your existing Chrome session, classifies them with AI, and saves them locally
 2. **A local web app** (`localhost:3333`) — a React UI for browsing, searching, tagging, and managing those bookmarks
 
 The X API charges for bookmark access. Booked bypasses that entirely by intercepting X's own internal GraphQL API responses via Playwright — no API key, no cost, no credentials to manage.
@@ -70,12 +70,12 @@ The X API charges for bookmark access. Booked bypasses that entirely by intercep
 The Claude skill lives separately:
 
 ```
-~/.agents/skills/x-bookmarks/   ← Source (committed to .agents repo)
+~/.agents/skills/Booked/        ← Source (committed to .agents repo)
 ├── SKILL.md
 ├── scripts/sync.sh
 └── references/fetch-options.md
 
-~/.claude/skills/x-bookmarks    ← Symlink → ../../.agents/skills/x-bookmarks
+~/.claude/skills/Booked         ← Symlink → ../../.agents/skills/Booked
 ```
 
 ---
@@ -85,7 +85,7 @@ The Claude skill lives separately:
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  Claude Code CLI                                             │
-│  User types: /x-bookmarks --range=week                      │
+│  User types: /Booked --range=week                           │
 └────────────────────────────┬────────────────────────────────┘
                              │ SKILL.md parses flags
                              ▼
@@ -119,13 +119,13 @@ The Claude skill lives separately:
 
 ## Data Flow: Sync Cycle
 
-When you run `/x-bookmarks`:
+When you run `/Booked`:
 
 1. **Parse flags** — SKILL.md extracts `--range`, `--count`, or `--all` and converts to JSON
 2. **Start server** — `sync.sh` checks port 3333; starts Express if needed
 3. **API call** — `POST /api/sync` with options body
 4. **Scrape** — `scraper.js` opens your real Chrome (already logged into X), navigates to `x.com/i/bookmarks`, intercepts the GraphQL API responses as the page loads, scrolls until the stop condition is met
-5. **Classify** — `classifier.js` sends each new tweet to Claude Haiku with a strict JSON-only prompt; gets back `{ category, tags }` for each
+5. **Classify** — `classifier.js` sends each new tweet to Claude Haiku with a strict JSON-only prompt; gets back `{ category, subcategory, tags }` for each
 6. **Upsert** — `data.js` merges incoming bookmarks into `bookmarks.json` by tweet ID. Existing records: only `metrics` updated, all user data (tags, category, notes) preserved. New records: added in full.
 7. **Meta update** — `lastSyncedAt` written to `meta.json`
 8. **Response** — `{ newBookmarks, totalScraped }` returned to `sync.sh`
@@ -208,7 +208,7 @@ No login automation needed — uses your real, valid Chrome session.
 
 ### `server/classifier.js`
 
-Sends each tweet's text (capped at 500 chars) to Claude Haiku with a strict JSON-only system prompt. Returns one of six fixed categories and 2–5 kebab-case tags. Gracefully falls back to `Uncategorized + []` if:
+Sends each tweet's text (capped at 500 chars) to Claude Haiku with a strict JSON-only system prompt. It uses your current category tree from `meta.json`, chooses a top-level category plus optional subcategory, and returns 2–5 kebab-case tags. Gracefully falls back to `Uncategorized + []` if:
 - `ANTHROPIC_API_KEY` is not set
 - The API returns non-JSON
 - The response has unexpected shape
@@ -303,13 +303,15 @@ All endpoints served at `http://localhost:3333/api/`.
 |--------|------|-------------|
 | GET | `/api/bookmarks` | List bookmarks. Query params: `category`, `tag`, `archived`, `sort`, `limit`, `offset` |
 | GET | `/api/bookmarks/:id` | Single bookmark |
-| PATCH | `/api/bookmarks/:id` | Update `tags`, `category`, `notes`, or `archived` |
+| PATCH | `/api/bookmarks/:id` | Update `tags`, `category`, `subcategory`, `notes`, or `archived` |
+| POST | `/api/bookmarks/reclassify` | AI-sort existing bookmarks. Body: `{ scope, category?, includeArchived?, limit?, overwriteTags? }` |
 | DELETE | `/api/bookmarks/:id` | Remove from local store (not from X) |
 
 **Sort values for GET `/api/bookmarks`:**
-- `bookmarkedAt_desc` (default)
-- `bookmarkedAt_asc`
+- `savedAt_desc` (default)
+- `savedAt_asc`
 - `postedAt_desc`
+- `postedAt_asc`
 - `metrics.likes_desc`
 - `metrics.retweets_desc`
 - `author.handle_asc`
@@ -410,24 +412,27 @@ export ANTHROPIC_API_KEY=sk-ant-your-key-here
 
 ## The Claude Skill
 
-**Location:** `~/.agents/skills/x-bookmarks/` (symlinked to `~/.claude/skills/x-bookmarks`)
+**Location:** `~/.agents/skills/Booked/` (symlinked to `~/.claude/skills/Booked`)
 
 **Invocation:**
 ```
-/x-bookmarks                  ← incremental sync (default)
-/x-bookmarks --sync           ← same as above, explicit
-/x-bookmarks --range=week     ← bookmarks saved in last 7 days
-/x-bookmarks --range=month    ← last 30 days
-/x-bookmarks --range=year     ← last 365 days
-/x-bookmarks --count=50       ← last 50 bookmarks by bookmark date
-/x-bookmarks --all            ← full history (slow, use once)
+/Booked                       ← incremental sync (default)
+/Booked --sync                ← same as above, explicit
+/Booked --range=week          ← bookmarks saved in last 7 days
+/Booked --range=month         ← last 30 days
+/Booked --range=year          ← last 365 days
+/Booked --count=50            ← last 50 bookmarks by bookmark date
+/Booked --all                 ← full history (slow, use once)
+/Booked --ai-sort             ← AI-sort all local bookmarks
+/Booked --ai-sort=uncategorized
+/Booked --ai-sort=category:Dev --limit=200
 ```
 
-The skill file (`SKILL.md`) instructs Claude to parse the flag, call `scripts/sync.sh` with the appropriate JSON body, and report the result. The shell script handles server startup, API call, and browser launch.
+The skill file (`SKILL.md`) instructs Claude to parse the command, call `scripts/sync.sh` for fetch/sync requests or `scripts/sort.sh` for AI sort requests, and report the result.
 
 **First run:** Use `--all` to import full history. Subsequent runs use `--sync` (the default) which only fetches what's new since the last run.
 
-**Auth:** No setup required. The scraper opens your actual Chrome browser window, which is already logged into X. If you're not logged in, Chrome will show the X login page — log in and re-run.
+**Auth:** One-time setup is required. Create `data/playwright-session.json` via `node server/import-cookies.js ~/Downloads/cookies.json` (recommended) or `node server/auth.js` (fallback), then run `/Booked`.
 
 ---
 

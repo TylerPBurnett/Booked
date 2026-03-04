@@ -48,5 +48,5 @@ await browser.close()
 
 console.log('')
 console.log(`Session saved to: ${SESSION_PATH}`)
-console.log('You can now run the sync with /x-bookmarks or:')
+console.log('You can now run the sync with /Booked or:')
 console.log('  curl -s -X POST http://localhost:3333/api/sync -H "Content-Type: application/json" -d \'{"count":10}\'')

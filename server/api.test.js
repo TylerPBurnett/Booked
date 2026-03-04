@@ -10,9 +10,22 @@ vi.mock('./scraper.js', () => ({
   scrapeBookmarks: vi.fn().mockResolvedValue([])
 }))
 
+// Mock classifier so reclassify tests do not call external APIs
+vi.mock('./classifier.js', () => ({
+  classifyBatch: vi.fn().mockImplementation(async (bookmarks) =>
+    bookmarks.map(b => ({
+      id: b.id,
+      category: 'Dev',
+      subcategory: 'Frontend',
+      tags: ['ai-sorted', 'bookmarks'],
+    }))
+  ),
+}))
+
 // Use an isolated temp directory — NEVER write to the real data/ folder
 const TEST_DATA_DIR = join(tmpdir(), `booked-test-${Date.now()}`)
 process.env.BOOKED_DATA_DIR = TEST_DATA_DIR
+process.env.ANTHROPIC_API_KEY = 'test-key'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -91,6 +104,62 @@ describe('PATCH /api/bookmarks/:id', () => {
     expect(res.body.tags).toEqual(['updated'])
     expect(res.body.notes).toBe('my note')
     expect(res.body.metrics.likes).toBe(500)
+  })
+})
+
+describe('POST /api/bookmarks/reclassify', () => {
+  it('returns 400 when ANTHROPIC_API_KEY is missing', async () => {
+    const prev = process.env.ANTHROPIC_API_KEY
+    delete process.env.ANTHROPIC_API_KEY
+
+    const res = await request(app)
+      .post('/api/bookmarks/reclassify')
+      .send({ scope: 'all' })
+
+    process.env.ANTHROPIC_API_KEY = prev
+    expect(res.status).toBe(400)
+  })
+
+  it('reclassifies uncategorized bookmarks and preserves non-empty tags by default', async () => {
+    await request(app)
+      .patch('/api/bookmarks/test-001')
+      .send({ category: 'Uncategorized', subcategory: null, tags: ['manual-tag'] })
+
+    const res = await request(app)
+      .post('/api/bookmarks/reclassify')
+      .send({ scope: 'uncategorized' })
+
+    expect(res.status).toBe(200)
+    expect(res.body.processed).toBe(1)
+    expect(res.body.updated).toBe(1)
+
+    const updated = await request(app).get('/api/bookmarks/test-001')
+    expect(updated.body.category).toBe('Dev')
+    expect(updated.body.subcategory).toBe('Frontend')
+    expect(updated.body.aiSuggestedTags).toEqual(['ai-sorted', 'bookmarks'])
+    expect(updated.body.tags).toEqual(['manual-tag'])
+  })
+
+  it('overwrites tags when overwriteTags is true', async () => {
+    await request(app)
+      .patch('/api/bookmarks/test-001')
+      .send({ category: 'Uncategorized', subcategory: null, tags: ['manual-tag'] })
+
+    const res = await request(app)
+      .post('/api/bookmarks/reclassify')
+      .send({ scope: 'uncategorized', overwriteTags: true })
+
+    expect(res.status).toBe(200)
+
+    const updated = await request(app).get('/api/bookmarks/test-001')
+    expect(updated.body.tags).toEqual(['ai-sorted', 'bookmarks'])
+  })
+
+  it('returns 400 for invalid scope', async () => {
+    const res = await request(app)
+      .post('/api/bookmarks/reclassify')
+      .send({ scope: 'everything' })
+    expect(res.status).toBe(400)
   })
 })
 

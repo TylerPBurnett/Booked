@@ -163,7 +163,7 @@ Ordered roughly by impact-to-effort ratio. Items near the top deliver the most v
 **Why:** The AI classifier uses the tweet text at import time. For bookmarks imported before the API key was set (classified as Uncategorized), or for bookmarks where the auto-classification was wrong, this lets the user trigger a fresh pass.
 
 **Implementation:**
-- `POST /api/bookmarks/reclassify` — accepts array of IDs, runs classifier, updates records, returns updated bookmarks
+- Backend is now implemented: `POST /api/bookmarks/reclassify` with scope/options (`all`, `uncategorized`, `category`, `limit`, `overwriteTags`)
 - Add "Run AI ✨" to the bulk action bar
 - Could also be a single-bookmark action in the detail drawer footer
 
@@ -238,7 +238,7 @@ Ordered roughly by impact-to-effort ratio. Items near the top deliver the most v
 
 **What:** When the server starts, check if `lastSyncedAt` is older than N hours and automatically trigger a sync in the background. Show a small notification in the sidebar if new bookmarks were found.
 
-**Why:** Removes the need to manually run `/x-bookmarks` every time. The app stays fresh automatically as long as the server is running.
+**Why:** Removes the need to manually run `/Booked` every time. The app stays fresh automatically as long as the server is running.
 
 **Implementation:**
 - On `index.js` startup, compare `meta.lastSyncedAt` to current time

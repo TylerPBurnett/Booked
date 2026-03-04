@@ -164,13 +164,23 @@ All three files are gitignored. Back them up manually if needed.
 
 ## Skill
 
-### `/x-bookmarks` skill not found
+### `/Booked` skill not found
 
 Skills are loaded at session start. If the skill was created or modified during the current session, start a new Claude Code session.
 
 ### Skill exits with "No Playwright session found"
 
 The `sync.sh` script checks for `data/playwright-session.json` before starting. Run the auth setup (see above), then retry.
+
+### AI sort fails with `ANTHROPIC_API_KEY is required`
+
+`/Booked --ai-sort` reclassifies existing bookmarks using Claude. Set your key in `.env`:
+
+```bash
+ANTHROPIC_API_KEY=sk-ant-your-key
+```
+
+Then restart the server and re-run the command.
 
 ### Sync completes but browser doesn't open
 

@@ -121,9 +121,33 @@ Supported options:
 - `range`: `sync` (default), `week`, `month`, `year`, `all`
 - `count`: integer max count override
 
+### AI-sort existing bookmarks (API)
+
+```bash
+curl -X POST http://localhost:3333/api/bookmarks/reclassify \
+  -H "Content-Type: application/json" \
+  -d '{"scope":"uncategorized","overwriteTags":false}'
+```
+
+Body options:
+
+- `scope`: `all` | `uncategorized` | `category`
+- `category`: required when `scope="category"`
+- `includeArchived`: boolean (default `false`)
+- `limit`: positive integer
+- `overwriteTags`: boolean (default `false`)
+
 ### Via Claude skill (optional workflow)
 
-This repository is designed to pair with a local `/x-bookmarks` skill workflow.
+This repository is designed to pair with a local `/Booked` skill workflow.
+
+Examples:
+
+- Sync new items: `/Booked --sync`
+- Full import: `/Booked --all`
+- AI sort all local bookmarks: `/Booked --ai-sort`
+- AI sort only uncategorized: `/Booked --ai-sort=uncategorized`
+- Show command guide: `/Booked --help`
 
 ## API Summary
 
@@ -132,6 +156,7 @@ This repository is designed to pair with a local `/x-bookmarks` skill workflow.
 - `GET /api/bookmarks?category=&tag=&archived=&sort=&limit=&offset=`
 - `GET /api/bookmarks/:id`
 - `PATCH /api/bookmarks/:id` (editable fields: `tags`, `category`, `subcategory`, `notes`, `archived`)
+- `POST /api/bookmarks/reclassify` (AI-sort existing bookmarks)
 - `DELETE /api/bookmarks/:id`
 
 ### Meta
