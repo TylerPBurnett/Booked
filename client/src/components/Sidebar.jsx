@@ -752,7 +752,20 @@ export function Sidebar({
 
       {/* Nav */}
       <div className="flex-1 overflow-y-auto scrollbar-thin pb-2 space-y-0.5 px-2">
-        {!collapsed && <p className="px-2.5 text-[10px] font-semibold uppercase tracking-widest text-ink-low mb-2 pt-1">Library</p>}
+        {!collapsed && (
+          <div className="flex items-center justify-between px-2.5 mb-2 pt-1">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-low">Library</p>
+            <button
+              onClick={() => setAddingTop(true)}
+              className="p-0.5 rounded text-ink-low hover:text-ink-mid hover:bg-float transition-colors"
+              title="Add category"
+            >
+              <svg className="w-3.5 h-3.5" viewBox="0 0 14 14" fill="none">
+                <path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            </button>
+          </div>
+        )}
         {collapsed && <div className="h-2" />}
 
         {/* All */}
@@ -911,24 +924,12 @@ export function Sidebar({
         )}
 
         {/* Add top-level category */}
-        {!collapsed && (
-          addingTop ? (
-            <AddInput
-              placeholder="Category name…"
-              onAdd={(name) => { onCreateCategory(name); setAddingTop(false) }}
-              onCancel={() => setAddingTop(false)}
-            />
-          ) : (
-            <button
-              onClick={() => setAddingTop(true)}
-              className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs text-ink-low hover:text-ink-mid hover:bg-float transition-colors"
-            >
-              <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 14 14" fill="none">
-                <path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-              </svg>
-              Add category
-            </button>
-          )
+        {!collapsed && addingTop && (
+          <AddInput
+            placeholder="Category name…"
+            onAdd={(name) => { onCreateCategory(name); setAddingTop(false) }}
+            onCancel={() => setAddingTop(false)}
+          />
         )}
 
         {/* Tags */}
