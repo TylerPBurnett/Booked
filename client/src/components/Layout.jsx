@@ -41,7 +41,7 @@ export function Layout({ sidebar, header, children, collapsed, onToggleSidebar, 
         if (newWidth < 180) {
           // Drag left past threshold → collapse, but keep drag alive so user can reverse
           collapsedMidDrag = true
-          expandedMidDrag = false
+          expandedMidDrag = false  // reset so next rightward drag re-triggers onExpand
           onCollapse()
         } else {
           const w = Math.min(Math.max(newWidth, 180), 400)

@@ -30,7 +30,10 @@ function BookedApp() {
     try { return Number(localStorage.getItem('booked-sidebar-width')) || 240 } catch { return 240 }
   })
 
-  const handleResize = (w) => setSidebarWidth(w)
+  const handleCollapse = () => {
+    setSidebarCollapsed(true)
+    try { localStorage.setItem('booked-sidebar-collapsed', 'true') } catch {}
+  }
 
   const handleResizeEnd = (w) => {
     setSidebarWidth(w)
@@ -72,9 +75,9 @@ function BookedApp() {
         collapsed={sidebarCollapsed}
         onToggleSidebar={toggleSidebar}
         sidebarWidth={sidebarWidth}
-        onResize={handleResize}
+        onResize={setSidebarWidth}
         onResizeEnd={handleResizeEnd}
-        onCollapse={toggleSidebar}
+        onCollapse={handleCollapse}
         onExpand={handleExpand}
         sidebar={
           <Sidebar
