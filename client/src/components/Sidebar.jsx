@@ -302,10 +302,8 @@ function ColorPicker({ onSelect, currentColor, onClose }) {
 function CategoryRow({
   name, count, active, depth, expanded, hasChildren,
   onClick, onToggleExpand,
-  onAdd, onRename, onDelete,
+  onRename, onDelete,
   onAddSub = null,
-  onChangeIcon = null,
-  onChangeColor = null,
   onUpdateCategory = null,
   icon = null,
   color = null,
@@ -715,7 +713,6 @@ export function Sidebar({
                     hasChildren={true}
                     onClick={() => { setCategory(cat.name); setSubcategory(null) }}
                     onToggleExpand={() => toggleExpand(cat.name)}
-                    onAdd={null}
                     onRename={(newName) => onRenameCategory(cat.name, newName)}
                     onDelete={() => onDeleteCategory(cat.name)}
                     onAddSub={() => setAddingSub(cat.name)}
@@ -737,7 +734,7 @@ export function Sidebar({
                           hasChildren={false}
                           onClick={() => { setCategory(cat.name); setSubcategory(sub.name) }}
                           onToggleExpand={null}
-                          onAdd={null}
+
                           onRename={(newName) => onRenameCategory(sub.name, newName, cat.name)}
                           onDelete={() => onDeleteCategory(sub.name, cat.name)}
                           onAddSub={null}
