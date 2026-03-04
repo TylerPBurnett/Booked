@@ -279,7 +279,6 @@ function CategoryRow({
   }
 
   const isProtected = name === 'Uncategorized' || name === 'All'
-  const indent = depth === 1 ? 'pl-6' : ''
 
   if (sidebarCollapsed) {
     if (depth > 0) return null
@@ -299,7 +298,7 @@ function CategoryRow({
   }
 
   return (
-    <div className={clsx('group/row relative', indent)}>
+    <div className="group/row relative">
       {editing ? (
         <div className="flex items-center px-2 py-1">
           <input
@@ -316,7 +315,7 @@ function CategoryRow({
         </div>
       ) : (
         <div className="flex items-center rounded-lg overflow-hidden">
-          {hasChildren ? (
+          {depth === 0 && (hasChildren ? (
             <button
               onClick={onToggleExpand}
               className="p-1 shrink-0 text-ink-low hover:text-ink-mid transition-colors"
@@ -327,7 +326,7 @@ function CategoryRow({
             </button>
           ) : (
             <span className="w-5 shrink-0" />
-          )}
+          ))}
 
           {depth === 0 && !isProtected && dragHandleListeners && (
             <button
@@ -348,10 +347,16 @@ function CategoryRow({
             onClick={onClick}
             className={clsx(
               'flex-1 flex items-center gap-2 py-1.5 pr-1 text-sm transition-colors text-left min-w-0',
+              depth === 1 && 'pl-1',
               active ? 'text-brand font-semibold' : 'text-ink-mid hover:text-ink'
             )}
           >
-            {depth === 0 && <span className="shrink-0">{getCategoryIcon(name)}</span>}
+            {depth === 0
+              ? <span className="shrink-0">{getCategoryIcon(name)}</span>
+              : <svg className="w-3.5 h-3.5 shrink-0 flex-none opacity-60" viewBox="0 0 14 14" fill="none">
+                  <path d="M1.5 4.5C1.5 3.67 2.17 3 3 3h2.38l1.24 1.5H11c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5H3c-.83 0-1.5-.67-1.5-1.5v-6z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
+                </svg>
+            }
             <span className="truncate">{name}</span>
             <span className={clsx('ml-auto shrink-0 text-xs tabular-nums font-mono', active ? 'text-brand' : 'text-ink-low')}>
               {count}
@@ -360,7 +365,7 @@ function CategoryRow({
 
           {!isProtected && (
             <div className="flex items-center gap-0.5 opacity-0 group-hover/row:opacity-100 transition-opacity shrink-0 pr-1">
-                  <button
+              <button
                 onClick={() => { setEditVal(name); setEditing(true) }}
                 title="Rename"
                 className="w-5 h-5 flex items-center justify-center rounded text-ink-low hover:text-ink hover:bg-float transition-colors"
@@ -583,7 +588,7 @@ export function Sidebar({
                     collapsed={false}
                   />
                   {expandedCats[cat.name] && (
-                    <div className="space-y-0.5 pb-0.5">
+                    <div className="ml-[22px] pl-3 border-l border-wire-dim space-y-0.5 pt-0.5 pb-1">
                       {cat.children.map(sub => (
                         <CategoryRow
                           key={sub.name}
@@ -602,17 +607,15 @@ export function Sidebar({
                         />
                       ))}
                       {addingSub === cat.name ? (
-                        <div className="pl-6">
-                          <AddInput
-                            placeholder="Subcategory name…"
-                            onAdd={(name) => { onCreateCategory(name, cat.name); setAddingSub(null) }}
-                            onCancel={() => setAddingSub(null)}
-                          />
-                        </div>
+                        <AddInput
+                          placeholder="Subcategory name…"
+                          onAdd={(name) => { onCreateCategory(name, cat.name); setAddingSub(null) }}
+                          onCancel={() => setAddingSub(null)}
+                        />
                       ) : (
                         <button
                           onClick={() => setAddingSub(cat.name)}
-                          className="w-full flex items-center gap-1.5 pl-9 pr-2 py-1 rounded-lg text-xs text-ink-low hover:text-ink-mid hover:bg-float transition-colors"
+                          className="w-full flex items-center gap-1.5 pl-2 pr-2 py-1 rounded-lg text-xs text-ink-low hover:text-ink-mid hover:bg-float transition-colors"
                         >
                           <svg className="w-3 h-3 shrink-0" viewBox="0 0 12 12" fill="none">
                             <path d="M6 2v8M2 6h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
