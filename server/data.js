@@ -101,11 +101,22 @@ export function upsertBookmarks(incoming) {
 /** Convert old flat string array to new nested format. No-op if already migrated. */
 export function migrateMeta(meta) {
   if (!Array.isArray(meta.categories) || meta.categories.length === 0) return meta
-  if (typeof meta.categories[0] === 'object') return meta // already migrated
-  return {
-    ...meta,
-    categories: meta.categories.map(name => ({ name, children: [] })),
+
+  let categories = meta.categories
+
+  // Phase 1: convert old flat string array to object format
+  if (typeof categories[0] === 'string') {
+    categories = categories.map(name => ({ name, children: [] }))
   }
+
+  // Phase 2: ensure every category object has icon and color fields
+  categories = categories.map(c => ({
+    ...c,
+    icon: c.icon ?? null,
+    color: c.color ?? null,
+  }))
+
+  return { ...meta, categories }
 }
 
 /** Flat list of all category names: parents then their children. */

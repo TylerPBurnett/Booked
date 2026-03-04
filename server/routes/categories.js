@@ -17,6 +17,8 @@ router.get('/', (req, res) => {
 
   const tree = meta.categories.map(cat => ({
     name: cat.name,
+    icon: cat.icon ?? null,
+    color: cat.color ?? null,
     count: countFor(cat.name),
     children: cat.children.map(sub => ({ name: sub, count: countSub(cat.name, sub) })),
   }))
@@ -42,10 +44,21 @@ router.post('/', (req, res) => {
   res.status(201).json({ name: name.trim(), parent: parent || null, children: [] })
 })
 
-// PATCH /api/categories/:name — rename (cascades to bookmarks)
+// PATCH /api/categories/:name — rename (cascades to bookmarks) or update icon/color
 router.patch('/:name', (req, res) => {
   const oldName = req.params.name
-  const { name: newName, parent } = req.body
+  const { name: newName, parent, icon, color } = req.body
+
+  // If only icon/color update (no rename), skip cascade
+  if ((icon !== undefined || color !== undefined) && (!newName || newName === oldName)) {
+    const meta = readMeta()
+    const cat = meta.categories.find(c => c.name === oldName)
+    if (!cat) return res.status(404).json({ error: 'Category not found' })
+    if (icon !== undefined) cat.icon = icon
+    if (color !== undefined) cat.color = color
+    writeMeta(meta)
+    return res.json({ ok: true })
+  }
 
   if (!newName) return res.status(400).json({ error: 'name is required' })
 

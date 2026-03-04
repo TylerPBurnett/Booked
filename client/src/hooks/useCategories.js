@@ -39,6 +39,16 @@ export function useCategories() {
     await fetch_()
   }, [fetch_])
 
+  const updateCategory = useCallback(async (name, patch) => {
+    const res = await fetch(`/api/categories/${encodeURIComponent(name)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patch),
+    })
+    if (!res.ok) throw new Error((await res.json()).error)
+    await fetch_()
+  }, [fetch_])
+
   const reorderCategories = useCallback(async (nameOrder) => {
     // Optimistic update — reorder local state immediately
     setCategories(prev => {
@@ -58,5 +68,5 @@ export function useCategories() {
     }
   }, [fetch_])
 
-  return { categories, createCategory, renameCategory, deleteCategory, reorderCategories, refetch: fetch_ }
+  return { categories, createCategory, renameCategory, updateCategory, deleteCategory, reorderCategories, refetch: fetch_ }
 }
