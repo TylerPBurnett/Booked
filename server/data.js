@@ -102,21 +102,26 @@ export function upsertBookmarks(incoming) {
 export function migrateMeta(meta) {
   if (!Array.isArray(meta.categories) || meta.categories.length === 0) return meta
 
+  let changed = false
   let categories = meta.categories
 
   // Phase 1: convert old flat string array to object format
   if (typeof categories[0] === 'string') {
     categories = categories.map(name => ({ name, children: [] }))
+    changed = true
   }
 
   // Phase 2: ensure every category object has icon and color fields
-  categories = categories.map(c => ({
-    ...c,
-    icon: c.icon ?? null,
-    color: c.color ?? null,
-  }))
+  if (categories.some(c => c.icon === undefined || c.color === undefined)) {
+    categories = categories.map(c => ({
+      ...c,
+      icon: c.icon ?? null,
+      color: c.color ?? null,
+    }))
+    changed = true
+  }
 
-  return { ...meta, categories }
+  return changed ? { ...meta, categories } : meta
 }
 
 /** Flat list of all category names: parents then their children. */
@@ -140,7 +145,7 @@ export function addCategory(meta, name, parent = null) {
     }
   }
 
-  return { ...meta, categories: [...meta.categories, { name, children: [] }] }
+  return { ...meta, categories: [...meta.categories, { name, icon: null, color: null, children: [] }] }
 }
 
 /** Return new meta with a category removed. Throws on protected names. */

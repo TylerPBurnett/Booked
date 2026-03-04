@@ -49,14 +49,20 @@ router.patch('/:name', (req, res) => {
   const oldName = req.params.name
   const { name: newName, parent, icon, color } = req.body
 
-  // If only icon/color update (no rename), skip cascade
+  // If only icon/color update (no rename), skip bookmark cascade
   if ((icon !== undefined || color !== undefined) && (!newName || newName === oldName)) {
     const meta = readMeta()
-    const cat = meta.categories.find(c => c.name === oldName)
-    if (!cat) return res.status(404).json({ error: 'Category not found' })
-    if (icon !== undefined) cat.icon = icon
-    if (color !== undefined) cat.color = color
-    writeMeta(meta)
+    if (!meta.categories.some(c => c.name === oldName)) {
+      return res.status(404).json({ error: 'Category not found' })
+    }
+    writeMeta({
+      ...meta,
+      categories: meta.categories.map(c =>
+        c.name === oldName
+          ? { ...c, ...(icon !== undefined && { icon }), ...(color !== undefined && { color }) }
+          : c
+      ),
+    })
     return res.json({ ok: true })
   }
 
