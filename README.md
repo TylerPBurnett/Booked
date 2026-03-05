@@ -207,6 +207,7 @@ npm run test --workspace=server
 - [X GraphQL API Notes](docs/X_API_NOTES.md)
 - [Scaling Notes](docs/SCALING.md)
 - [Improvements Roadmap](docs/IMPROVEMENTS.md)
+- [UI/UX Roadmap](docs/UI_UX_ROADMAP.md)
 - Session notes and design plans under [`docs/plans`](docs/plans)
 
 ## Security Notes

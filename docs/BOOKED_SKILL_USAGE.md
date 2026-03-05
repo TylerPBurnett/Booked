@@ -84,6 +84,6 @@ npm run test --workspace=server
 
 ## Notes
 
-- AI sorting requires `ANTHROPIC_API_KEY` in environment.
+- AI sorting is performed directly by the Claude Code or Codex CLI agent — no `ANTHROPIC_API_KEY` needed.
 - Sync requires `data/playwright-session.json`.
 - Existing user tags are preserved by default during AI sort unless `--overwrite-tags` is set.
